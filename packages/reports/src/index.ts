@@ -180,7 +180,7 @@ function formatPrRepairGuidance(report: DriftReport, options: ReportFormatOption
     `- Safe auto-fix candidates: ${safeFindings.length}`,
     `- Needs human or agent review: ${reviewFindings.length}`,
     "",
-    "Replace `<target-repository-root>` with the repository root being repaired. Local `npx repo-evidoc` commands require the npm package to be published. If npm returns 404, use this PR comment as the repair evidence, ask an agent with the prompt below, or use the source-checkout fallback shown under each command.",
+    "Replace `<target-repository-root>` with the repository root being repaired. Local `npx repo-evidoc` commands use the published npm package. When testing unreleased changes from an Evidoc source checkout, use the source-checkout fallback shown under each command.",
     "",
     "1. Preview deterministic safe fixes: `npx repo-evidoc fix --safe --json --root <target-repository-root>`",
     "   Source checkout: `npm run evidoc -- fix --safe --json --root <target-repository-root>`",
@@ -227,8 +227,8 @@ function formatNoDocumentCoverageGuidance(): string[] {
     "",
     "- Add a `README.md` or `docs/` directory if this repository should have documentation drift coverage.",
     "- If docs already exist, update `.evidoc/config.json` `docRoots` so Evidoc scans them.",
-    "- Initialize repository support files with `npx repo-evidoc init --yes --root <target-repository-root>` after the npm package is available.",
-    "- Before npm publication, run from an Evidoc source checkout with `npm run evidoc -- init --yes --root <target-repository-root>`.",
+    "- Initialize repository support files with `npx repo-evidoc init --yes --root <target-repository-root>`.",
+    "- When testing from an Evidoc source checkout, run `npm run evidoc -- init --yes --root <target-repository-root>`.",
     "- Re-run Evidoc before merging: `npx repo-evidoc check --fail-on=review_needed --root <target-repository-root>` or `npm run evidoc -- check --fail-on=review_needed --root <target-repository-root>` from a source checkout.",
     ""
   ];
@@ -261,7 +261,7 @@ function formatAgentRepairPrompt(findings: DriftFinding[], safeFindings: DriftFi
     "- Preview deterministic safe fixes: `npx repo-evidoc fix --safe --json --root <target-repository-root>`",
     "- Apply deterministic safe fixes: `npx repo-evidoc fix --safe --write --json --root <target-repository-root>`",
     "- Generate evidence-bound repair prompts: `npx repo-evidoc diagnose --root <target-repository-root>`",
-    "- Source-checkout fallback: replace `npx repo-evidoc` with `npm run evidoc --` when using an Evidoc source checkout before npm publication.",
+    "- Source-checkout fallback: replace `npx repo-evidoc` with `npm run evidoc --` when testing from an Evidoc source checkout.",
     "",
     "Safe auto-fix candidates:",
     ...(safeFindings.length > 0
@@ -274,8 +274,8 @@ function formatAgentRepairPrompt(findings: DriftFinding[], safeFindings: DriftFi
       : ["- None requiring non-deterministic review in this PR comment."]),
     "",
     "Verification:",
-    "- If the npm package is available, run `npx repo-evidoc check --fail-on=review_needed --root <target-repository-root>`.",
-    "- If npm returns 404 and an Evidoc source checkout is available, run `npm run evidoc -- check --fail-on=review_needed --root <target-repository-root>` from that checkout.",
+    "- Run `npx repo-evidoc check --fail-on=review_needed --root <target-repository-root>`.",
+    "- When testing from an Evidoc source checkout, run `npm run evidoc -- check --fail-on=review_needed --root <target-repository-root>` from that checkout.",
     "",
     "Do not apply speculative rewrites. If evidence is insufficient, explain what must be checked manually.",
     "```"

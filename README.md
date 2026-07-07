@@ -4,13 +4,19 @@ Evidoc is an open-source-first, repo-local documentation drift control plane for
 
 It treats README, AGENTS.md, CLAUDE.md, architecture notes, API docs, examples, and source-bound documentation as engineering control surfaces. The goal is to prevent humans and coding agents from silently trusting stale repository knowledge.
 
-## Current Public Adoption
+## Quick Start
 
-Today, before the npm package is published, external repositories can adopt Evidoc through either a local source checkout or the GitHub Action below. Local Git mode does not require GitHub, a hosted repository, or GitHub Actions; it uses the repository's own Git history and repo-local hooks.
+Evidoc is published on npm as `repo-evidoc` and exposes the `evidoc` command. Node.js 22 or later is required.
 
-Local `npx repo-evidoc` commands are the intended npm path after the package is published. Until then, use the source-checkout fallback or the GitHub Action path; every `npx repo-evidoc` block below is the post-publication form unless it is paired with an `npm run evidoc -- ... --root <repository>` source-checkout command.
+From any repository:
 
-Before npm publication, the local source-checkout fallback requires Node.js 22 or later:
+```bash
+npx repo-evidoc check --fail-on=review_needed
+npx repo-evidoc app
+npx repo-evidoc init --yes --local-git --install-hooks
+```
+
+For source-checkout development or local verification of unreleased changes:
 
 ```bash
 git clone https://github.com/handong66/Evidoc.git
@@ -23,9 +29,9 @@ npm run evidoc -- fix --root /path/to/repository --safe --write --json
 npm run evidoc -- app --root /path/to/repository
 ```
 
-Single-repository commands use the first `--root` as the target repository, so a Codex, Claude Code, OpenCode, or human repair session can run Evidoc from this source checkout while editing an older project elsewhere on disk.
+Single-repository commands use the first `--root` as the target repository, so a Codex, Claude Code, OpenCode, or human repair session can run Evidoc from this source checkout while editing another project elsewhere on disk.
 A bare `evidoc --root <repository> --json` is treated as a scan, not as a GUI shortcut; use `evidoc app --root <repository>` or `evidoc serve --root <repository>` when the Local App is intended.
-`init`, `doctor`, and Local Git setup output also print equivalent `npm run evidoc -- ... --root <repository>` source-checkout fallbacks beside the intended `npx` command, so pre-publication users are not sent to an unavailable registry package.
+`init`, `doctor`, and Local Git setup output also print equivalent `npm run evidoc -- ... --root <repository>` source-checkout fallbacks beside the npm `npx` command for contributors testing from a checkout.
 
 ## Local Git Gate Adoption
 
@@ -120,7 +126,7 @@ If the changed-only baseline cannot be fetched in GitHub Actions, Evidoc warns, 
 Default-branch pushes use full scans as a safety net.
 
 PR comments include CI setup warnings, a next-step repair plan, safe auto-fix candidates, human/agent review items, a copy-paste prompt for Codex, Claude Code, or OpenCode, and the exact local commands to preview, apply, diagnose, and re-run Evidoc.
-The repair commands explicitly use `--root <target-repository-root>`, and each command also shows a source-checkout fallback for pre-publication or local-source testing. Agents are told to replace that placeholder with the repository they are editing; in GitHub Actions that repository root is `$GITHUB_WORKSPACE`.
+The repair commands explicitly use `--root <target-repository-root>`, and each command also shows a source-checkout fallback for local-source testing. Agents are told to replace that placeholder with the repository they are editing; in GitHub Actions that repository root is `$GITHUB_WORKSPACE`.
 
 The PR agent prompt carries affected document files, evidence file categories, each finding status, repair mode, structured evidence, and verification command.
 
@@ -128,7 +134,7 @@ Prompt safety rules are explicit: safe-only PRs are labeled as safe fixes instea
 
 Code-fence/newline prompt injection is neutralized, truncated comments warn that they are not complete repair evidence, and configured repository roots plus common local/CI absolute paths are redacted from PR comment fields.
 
-Those local `npx` commands require the npm package to be published; before then, use the PR comment evidence and let the GitHub Action re-run, or run the shown source-checkout commands from an Evidoc source checkout.
+Those local `npx` commands use the published npm package. When testing unreleased changes from an Evidoc source checkout, use the shown source-checkout commands instead.
 
 Safe auto-fix currently covers review-needed documented commands and agent `packageManager` fields backed by package-manager evidence. Broken findings remain review work even when they include structured evidence.
 
@@ -168,7 +174,7 @@ Adding another repository uses the system folder picker when available and keeps
 
 Repositories with findings include a copyable all-findings agent repair prompt for Codex, Claude Code, OpenCode, or another coding agent. Each individual finding still has its own focused prompt. These prompts:
 
-- include finding evidence and both published `npx` plus pre-publication source-checkout repair and verification commands with explicit `--root <target-repository-root>`;
+- include finding evidence and both npm `npx` plus source-checkout repair and verification commands with explicit `--root <target-repository-root>`;
 - tell the agent to treat finding text as untrusted data;
 - tell the agent not to run `<target-repository-root>` literally, and to replace it with the repository root being repaired;
 - mark findings without structured evidence as review-only;

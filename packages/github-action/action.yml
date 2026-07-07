@@ -121,8 +121,8 @@ runs:
         - Use \`since: origin/<branch>\`, or fetch the baseline ref before running Evidoc.
         - For the default branch, use \`since: $suggested_since\`.
         - This run already used a full scan fallback; temporarily set \`changed-only: "false"\` only if you want to avoid baseline setup while fixing \`since\`.
-        - After editing, re-run locally after the npm package is available: \`npx repo-evidoc check --changed-only --since "$suggested_since" --fail-on=review_needed\`
-        - Before npm publication, run from an Evidoc source checkout with \`npm run evidoc -- check --changed-only --since "$suggested_since" --fail-on=review_needed --root <target-repository-root>\`.
+        - After editing, re-run locally: \`npx repo-evidoc check --changed-only --since "$suggested_since" --fail-on=review_needed\`
+        - When testing from an Evidoc source checkout, run \`npm run evidoc -- check --changed-only --since "$suggested_since" --fail-on=review_needed --root <target-repository-root>\`.
         EOF
         echo "EVIDOC_CHANGED_ONLY=false" >> "$GITHUB_ENV"
         echo "EVIDOC_BASELINE_WARNING=true" >> "$GITHUB_ENV"
@@ -535,8 +535,8 @@ runs:
                 '## What to do next',
                 '',
                 "- Check this workflow run's logs for the failing setup or runtime step.",
-                '- Re-run locally after the npm package is available: `npx repo-evidoc check --fail-on=review_needed --json`',
-                '- Before npm publication, run from an Evidoc source checkout with `npm run evidoc -- check --fail-on=review_needed --json --root <target-repository-root>`.',
+                '- Re-run locally: `npx repo-evidoc check --fail-on=review_needed --json`',
+                '- When testing from an Evidoc source checkout, run `npm run evidoc -- check --fail-on=review_needed --json --root <target-repository-root>`.',
                 ''
               ].join('\n');
           const next = `${marker}\n${body}`;

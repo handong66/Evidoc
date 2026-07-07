@@ -153,7 +153,7 @@ test("formats bounded PR comments with truncation notice", () => {
 
 test("formats PR comments with actionable repair guidance", () => {
   const comment = formatPrComment(report);
-  const npmNoticeIndex = comment.indexOf("Local `npx repo-evidoc` commands require the npm package");
+  const npmNoticeIndex = comment.indexOf("Local `npx repo-evidoc` commands use the published npm package");
   const firstCommandIndex = comment.indexOf("1. Preview deterministic safe fixes");
 
   assert.match(comment, /## What to do next/);
@@ -584,12 +584,11 @@ test("formats truncated PR comments without leaving an open agent prompt fence",
   assert.match(comment, /Do not treat this truncated comment as complete repair evidence/);
 });
 
-test("formats PR comments with an npm-unpublished fallback path", () => {
+test("formats PR comments with published npm and source-checkout commands", () => {
   const comment = formatPrComment(report);
 
-  assert.match(comment, /Local `npx repo-evidoc` commands require the npm package to be published/);
-  assert.match(comment, /If npm returns 404/);
-  assert.match(comment, /use this PR comment as the repair evidence/);
+  assert.match(comment, /Local `npx repo-evidoc` commands use the published npm package/);
+  assert.match(comment, /testing unreleased changes from an Evidoc source checkout/);
   assert.match(comment, /source-checkout fallback shown under each command/);
   assert.match(comment, /npm run evidoc -- fix --safe --json --root <target-repository-root>/);
   assert.match(comment, /npm run evidoc -- check --fail-on=review_needed --root <target-repository-root>/);

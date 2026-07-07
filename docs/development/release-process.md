@@ -43,7 +43,7 @@ After trusted publishing is configured and a publish workflow has succeeded, rem
 gh secret delete NPM_TOKEN --repo handong66/Evidoc
 ```
 
-Before the first public npm release, verify that every intended package name is either still unpublished or already owned by the maintainer account:
+Before adding a new public npm package or changing package ownership, verify that every intended package name is either still unpublished or already owned by the maintainer account:
 
 ```bash
 npm view repo-evidoc name version --json

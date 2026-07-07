@@ -2,9 +2,17 @@
 
 Evidoc is designed for copy-paste adoption. A new repository should not need to learn the rule system before it can run a first scan.
 
-Before the npm package is published, use either the source-checkout CLI path or the public GitHub Action path. Local Git mode is first-class for repositories that are not on GitHub, cannot upload to GitHub, or should keep the gate entirely inside the local checkout. The local `npx repo-evidoc` commands below describe the intended npm package path after publication.
+The npm package is the default adoption path. Local Git mode is first-class for repositories that are not on GitHub, cannot upload to GitHub, or should keep the gate entirely inside the local checkout.
 
-Before npm publication, a local agent or human can still run Evidoc against an older repository from a source checkout. This path requires Node.js 22 or later:
+From any repository with Node.js 22 or later:
+
+```bash
+npx repo-evidoc check --fail-on=review_needed
+npx repo-evidoc app
+npx repo-evidoc init --yes --local-git --install-hooks
+```
+
+A local agent or human can also run Evidoc against another repository from a source checkout when testing unreleased changes:
 
 ```bash
 git clone https://github.com/handong66/Evidoc.git
@@ -18,9 +26,9 @@ npm run evidoc -- app --root /path/to/repository
 ```
 
 Single-repository commands use the first `--root` as the target repository.
-That makes the pre-npm repair loop usable from Codex, Claude Code, OpenCode, or a terminal session without installing a registry package into the older project.
+That makes the source-checkout repair loop usable from Codex, Claude Code, OpenCode, or a terminal session without installing the current checkout into the target project.
 A bare `evidoc --root <repository> --json` runs a scan; use `evidoc app --root <repository>` or `evidoc serve --root <repository>` when you want the Local App.
-`init`, `doctor`, and Local Git setup also print the equivalent source-checkout fallback beside the future `npx` command.
+`init`, `doctor`, and Local Git setup also print the equivalent source-checkout fallback beside the npm `npx` command.
 
 ## Local Git Gate Setup
 
@@ -118,7 +126,7 @@ If the changed-only baseline cannot be fetched in GitHub Actions, Evidoc warns, 
 Default-branch pushes use full scans as a safety net.
 
 PR comments include CI setup warnings, a next-step repair plan, safe auto-fix candidates, human/agent review items, a copy-paste prompt for Codex, Claude Code, or OpenCode, and the exact local commands to preview, apply, diagnose, and re-run Evidoc.
-The repair commands explicitly use `--root <target-repository-root>`, and each command also shows a source-checkout fallback for pre-publication or local-source testing. Agents are told to replace that placeholder with the repository they are editing; in GitHub Actions that repository root is `$GITHUB_WORKSPACE`.
+The repair commands explicitly use `--root <target-repository-root>`, and each command also shows a source-checkout fallback for local-source testing. Agents are told to replace that placeholder with the repository they are editing; in GitHub Actions that repository root is `$GITHUB_WORKSPACE`.
 
 The PR agent prompt carries affected document files, evidence file categories, each finding status, repair mode, structured evidence, and verification command.
 
@@ -126,7 +134,7 @@ Prompt safety rules are explicit: safe-only PRs are labeled as safe fixes instea
 
 Code-fence/newline prompt injection is neutralized, truncated comments warn that they are not complete repair evidence, and configured repository roots plus common local/CI absolute paths are redacted from PR comment fields.
 
-Those local `npx` commands require the npm package to be published; before then, use the PR comment evidence and let the GitHub Action re-run, or run the shown source-checkout commands from an Evidoc source checkout.
+Those local `npx` commands use the published npm package. When testing unreleased changes from an Evidoc source checkout, use the shown source-checkout commands instead.
 
 Safe auto-fix currently covers review-needed documented commands and agent `packageManager` fields backed by package-manager evidence. Broken findings remain review work even when they include structured evidence.
 
@@ -186,7 +194,7 @@ Adding another repository opens the system folder picker when the desktop suppor
 
 Repositories with findings include a copyable all-findings agent repair prompt for Codex, Claude Code, OpenCode, or another coding agent. Each individual finding still has its own focused prompt. The prompts:
 
-- include finding evidence and both published `npx` plus pre-publication source-checkout repair and verification commands with explicit `--root <target-repository-root>`;
+- include finding evidence and both npm `npx` plus source-checkout repair and verification commands with explicit `--root <target-repository-root>`;
 - tell the agent to treat finding text as untrusted data;
 - tell the agent not to run `<target-repository-root>` literally, and to replace it with the repository root being repaired;
 - mark findings without structured evidence as review-only;
@@ -222,7 +230,7 @@ Normal scans also report stale `docRoots` or `apiSpecPaths` as broken `config.mi
 
 Existing configured doc roots that contain no Markdown or MDX produce a `coverage.no-documents-scanned` review-needed finding. Trailing slashes are normalized, so `docs` and `docs/` behave the same.
 
-Before npm publication, use the printed `npm run evidoc -- doctor --root <repository>` or `npm run evidoc -- init --yes --root <repository>` source-checkout fallback. For local Git mode, use the printed `npm run evidoc -- init --yes --local-git --install-hooks --root <repository>` fallback.
+When testing from an Evidoc source checkout, use the printed `npm run evidoc -- doctor --root <repository>` or `npm run evidoc -- init --yes --root <repository>` source-checkout fallback. For local Git mode, use the printed `npm run evidoc -- init --yes --local-git --install-hooks --root <repository>` fallback.
 For older or hand-written GitHub Actions workflows, `doctor` also prints non-blocking warnings when an Evidoc workflow listens to both `pull_request` and unfiltered `push`, when `push.branches` omits the detected repository branch, when packaged-action `pr-comment: "true"` is missing, or when the workflow gates only `fail-on: broken`.
 Source-checkout self-scan steps such as `npm run evidoc -- --fail-on=review_needed` count as an Evidoc workflow without requiring packaged-action PR-comment inputs; equivalent pnpm, Yarn, Bun, and direct CLI script forms are recognized for repositories that use those runners.
 If a workflow delegates to `uses: ./.github/actions/<name>`, `doctor` resolves that local action's definition file inside the repository root and recognizes nested local action entrypoints that eventually run Evidoc.

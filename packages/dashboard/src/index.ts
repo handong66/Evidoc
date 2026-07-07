@@ -1192,7 +1192,7 @@ function buildLocalAppRepositoryAgentPrompt(repository: LocalAppRepositoryState)
     "Run from the target repository root after editing:",
     "npx repo-evidoc check --fail-on=review_needed",
     "",
-    "Before npm publication or from an Evidoc source checkout, use:",
+    "When testing from an Evidoc source checkout, use:",
     "npm run evidoc -- check --root <target-repository-root> --fail-on=review_needed",
     ""
   ].join("\n");
@@ -1229,7 +1229,7 @@ function buildLocalAppAgentPrompt(
     "Run from the target repository root after editing:",
     "npx repo-evidoc check --fail-on=review_needed",
     "",
-    "Before npm publication or from an Evidoc source checkout, use:",
+    "When testing from an Evidoc source checkout, use:",
     "npm run evidoc -- check --root <target-repository-root> --fail-on=review_needed",
     ""
   ].join("\n");

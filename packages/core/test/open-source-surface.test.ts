@@ -147,20 +147,19 @@ test("README GitHub Action examples keep PR comments visible by default", async 
   assert.doesNotMatch(actionSection, /pull_request:\n  push:\n\npermissions:/);
 });
 
-test("public docs put the current GitHub Action path before unpublished npx adoption", async () => {
+test("public docs present npx adoption as the current npm path", async () => {
   const readme = await readFile(join(root, "README.md"), "utf8");
   const onboarding = await readFile(join(root, "docs/onboarding.md"), "utf8");
 
-  assert.ok(
-    readme.indexOf("\n## GitHub Action Adoption\n") < readme.indexOf("\n## Zero-Setup Local Adoption\n"),
-    "README should show the currently supported public GitHub Action path before the future npm/npx path"
-  );
-  assert.ok(
-    onboarding.indexOf("\n## GitHub Action CI Setup\n") < onboarding.indexOf("\n## One-command Local Setup\n"),
-    "onboarding should show the currently supported public GitHub Action path before the future npm/npx path"
-  );
-  assert.match(readme, /before the npm package is published/i);
-  assert.match(onboarding, /before the npm package is published/i);
+  for (const text of [readme, onboarding]) {
+    assert.match(text, /npx repo-evidoc check --fail-on=review_needed/);
+    assert.match(text, /npx repo-evidoc app/);
+    assert.doesNotMatch(text, /before the npm package is published/i);
+    assert.doesNotMatch(text, /before npm publication/i);
+    assert.doesNotMatch(text, /future `npx` command/i);
+    assert.doesNotMatch(text, /pre-publication/i);
+    assert.doesNotMatch(text, /pre-npm/i);
+  }
   assert.match(readme, /npm run evidoc -- check --root \/path\/to\/repository --fail-on=review_needed/);
   assert.match(onboarding, /npm run evidoc -- check --root \/path\/to\/repository --fail-on=review_needed/);
   assert.match(readme, /npm run evidoc -- fix --root \/path\/to\/repository --safe --write --json/);

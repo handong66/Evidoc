@@ -486,7 +486,7 @@ function createAgentScanPayload(report: DriftReport, proposals: PatchProposal[])
       diagnose: "npx repo-evidoc diagnose --root <target-repository-root>",
       safeFixPreview: "npx repo-evidoc fix --safe --json --root <target-repository-root>",
       verify: "npx repo-evidoc check --fail-on=review_needed --root <target-repository-root>",
-      sourceCheckoutFallback: "replace `npx repo-evidoc` with `npm run evidoc --` from an Evidoc source checkout before npm publication"
+      sourceCheckoutFallback: "replace `npx repo-evidoc` with `npm run evidoc --` when testing from an Evidoc source checkout"
     },
     privacy: {
       repositoryContentUpload: "never_by_default",
