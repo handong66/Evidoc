@@ -1,10 +1,10 @@
-# Evidoc 用户故事
+# Evidoc 中文指南：功能、用户故事和使用场景
 
-如果你不知道 Evidoc 能帮你做什么，先看这一页。
+Evidoc 是一套仓库本地的文档可信度系统。它检查 README、docs、AGENTS.md、CLAUDE.md、CI 示例、API 说明、source binding 和代码是否仍然一致，并把同一份证据提供给人、CI、Web UI 和 AI agent。
 
-Evidoc 用来检查仓库里的 README、文档、AGENTS.md、CLAUDE.md、CI 示例、API 说明和代码是否已经不一致。它不是帮你多写文档，而是在合并、发布或交给 AI agent 之前，告诉你哪些仓库知识已经不可信。
+它不只是命令行扫描器。Evidoc 同时提供 CLI、本地 Web UI、Local Git Gate、GitHub Action、MCP tools、JSON reports、graph data、repair prompts、safe fixes、patch validation 和 review log。
 
-## 先用这三个命令
+## 先用这三个入口
 
 ```bash
 npx repo-evidoc demo
@@ -12,99 +12,74 @@ npx repo-evidoc check --fail-on=review_needed
 npx repo-evidoc app
 ```
 
-这三个命令分别对应：看一个示例、扫描当前仓库、打开本地 Web UI。
+- `demo` 打开一个内置示例，让你先看到完整 Command Center。
+- `check` 扫描当前仓库，输出终端报告和 CI 可用的退出码。
+- `app` 打开本地 Web UI，用浏览器查看仓库健康度、finding 证据、历史、门禁和修复入口。
 
-## 我是谁，应该用哪个命令？
+## Evidoc 能做什么
 
-| 你是谁 | 你遇到的问题 | Evidoc 帮你看到什么 | 先运行 |
-|--------|--------------|---------------------|--------|
-| 维护者 | README 里的命令、路径、API 或示例可能已经过期。 | 哪些文档需要人工复核，哪些检查结果会挡住合并。 | `npx repo-evidoc check --fail-on=review_needed` |
-| 使用 AI 编程的团队 | AGENTS.md、CLAUDE.md、Cursor rules 或 Copilot instructions 可能误导 agent。 | agent 指令是否和当前包管理器、路径、脚本、代码结构一致。 | `npx repo-evidoc verify --instructions --json` |
-| 私有、本地-only 或 air-gapped 仓库用户 | 不想把源码上传到第三方服务，也不一定能用 GitHub Actions。 | 本地扫描结果、本地 Git gate 结果，以及 `.evidoc/reports/` 里的审计记录。 | `npx repo-evidoc init --yes --local-git --install-hooks` |
-| GitHub PR reviewer | 希望 PR 评论直接指出本次改动影响了哪些文档。 | PR 评论、CI 检查状态、需要复核的文档片段和修复入口。 | `npx repo-evidoc init --yes` |
-| Codex、Claude Code、OpenCode 用户 | 想让 agent 基于当前证据修文档，而不是凭旧 README 记忆猜。 | 带证据的修复提示、当前扫描指纹和具体不一致证据。 | `npx repo-evidoc diagnose` |
-| 平台和工具链维护者 | 想把文档漂移结果接入内部 dashboard、CI、MCP 或 agent。 | JSON report、MCP tools、graph data、runtime fingerprint 和通用 CI recipes。 | `npx repo-evidoc recipes --target all` |
-| 开源维护者 | 希望贡献者先做低门槛检查，再请求 review。 | 环境诊断、常见配置问题和最小扫描路径。 | `npx repo-evidoc doctor` |
+| 能力 | 适合谁 | 使用入口 |
+|------|--------|----------|
+| CLI 扫描 | 想快速知道 README、docs、命令、路径、API 说明是否过期的维护者。 | `npx repo-evidoc check --fail-on=review_needed` |
+| 本地 Web UI / Command Center | 想在浏览器里看仓库健康度、证据、历史、漂移队列、修复控制台和多仓库状态的用户。 | `npx repo-evidoc app` |
+| Local Git Gate | 私有仓库、本地仓库、air-gapped 仓库、inner-source 仓库。 | `npx repo-evidoc init --yes --local-git --install-hooks` |
+| GitHub Action | 想在 PR 里看到 drift 评论、annotations、changed-only 扫描和 gate 状态的团队。 | `npx repo-evidoc init --yes` |
+| MCP tools | Codex、Claude Code、OpenCode、Cursor Agent 或内网 agent。 | `evidoc.agent_scan`、`evidoc.get_drift_status`、`evidoc.diagnose_drift`、`evidoc.suggest_doc_fix` |
+| JSON reports 和 CI recipes | 想把结果接入 GitLab、Jenkins、Gitea、Buildkite、内部 dashboard 或平台工具的团队。 | `npx repo-evidoc recipes --target all` |
+| Graph 和 evidence | 想知道文档、代码符号、API、命令、规则之间关系的工具链维护者。 | `npx repo-evidoc graph --json`、`npx repo-evidoc index --json` |
+| Agent evaluation | 想比较 agent 有无 Evidoc 证据时修复质量差异的团队。 | `npx repo-evidoc agent-eval --json` |
+| Repair prompts、patch drafts 和 safe fixes | 想把 finding 交给人或 agent 修，同时保留证据约束、patch draft 和 patch validation 的团队。 | `npx repo-evidoc diagnose`、`npx repo-evidoc draft --json`、`npx repo-evidoc validate --proposal <proposal-file> --json`、`npx repo-evidoc fix --safe --write --json` |
+| Review log 和 runtime fingerprint | 想记录人工复核、过期时间、责任人，并避免 agent 使用旧报告的团队。 | `npx repo-evidoc guard --event manual --scope staged --json` |
 
-## Evidoc 会不会改我的仓库？
+## 真实用户故事
 
-- `check`、`doctor`、`diagnose`、`verify` 默认只读。
-- `app` 可能在缺少配置时创建 `.evidoc/config.json` 和 `.evidoc/.gitignore`。
-- `init`、`init --local-git --install-hooks`、`fix --safe --write` 是显式写入命令。
-- 普通扫描默认不会调用外部 agent provider，也不会上传仓库内容。
+| 我是谁 | 我的场景 | Evidoc 给我什么 | 推荐入口 |
+|--------|----------|-----------------|----------|
+| 项目维护者 | README 里的命令、路径、API 或示例可能已经过期。 | 终端报告、具体 evidence、`review_needed` 或 `broken` 状态。 | `npx repo-evidoc check --fail-on=review_needed` |
+| 使用 AI 编程的团队 | AGENTS.md、CLAUDE.md、Cursor rules、Copilot instructions 会影响 agent 输出。 | 专门的 agent instruction drift 检查，指出旧路径、旧包管理器、矛盾规则。 | `npx repo-evidoc verify --instructions --json` |
+| 本地/私有仓库用户 | 代码不能上传第三方服务，也不一定使用 GitHub。 | repo-local Git hooks、本地报告、pre-commit/pre-push/manual gate。 | `npx repo-evidoc init --yes --local-git --install-hooks` |
+| GitHub PR reviewer | 想在 PR 里直接看到哪些 changed docs 或 affected docs 需要处理。 | PR comment、workflow annotations、fail policy、changed-only 扫描。 | `npx repo-evidoc init --yes` |
+| 想用 Web UI 的开发者 | 不想只看终端输出，希望在浏览器里筛选 finding、看历史、打开文件、生成修复提示。 | 本地 Command Center、漂移队列、修复控制台、Local Git Gate 面板、GitHub Action 生成动作。 | `npx repo-evidoc app` |
+| Codex / Claude Code / OpenCode 用户 | 想让 agent 先读取当前仓库证据，再生成修复方案。 | `evidoc.agent_scan` 默认扫描包、status tool、diagnose tool、evidence-bound patch proposal。 | `npx repo-evidoc diagnose` 或 MCP tools |
+| Agent workflow 维护者 | 想比较同一个 agent 在有无 Evidoc 证据时的修复结果。 | agent A/B benchmark、coverage pack、MCP default tool 信息。 | `npx repo-evidoc agent-eval --json` |
+| 平台和工具链维护者 | 想把文档漂移结果接入内部平台、dashboard、CI、agent workflow。 | JSON report、runtime fingerprint、graph data、CI recipes、machine-readable index。 | `npx repo-evidoc recipes --target all` |
+| 开源维护者 | 想给贡献者一个低门槛检查，减少“README 还能不能信”的 review 成本。 | `doctor`、`demo`、`check` 和可复制的 GitHub Action 配置。 | `npx repo-evidoc doctor` |
+| 架构/API 维护者 | 文档引用了源代码符号、OpenAPI operation、schema 或 source binding。 | symbol/API/schema/source binding drift 检查和 graph evidence。 | `npx repo-evidoc graph --json` |
+| 需要审计的团队 | 某些 drift 需要人工确认、短期 override 或到期复核。 | review log、TTL、finding 绑定、runtime fingerprint 和本地审计记录。 | `npx repo-evidoc guard --event manual --scope staged --json` |
 
-## Evidoc 不是什么
+## 写入由你选择
 
-- 不是默认自动修复、自动提交或自动合并的工具。
-- 不是默认把私有代码交给 LLM 的工具。
-- 不是只服务 GitHub 的工具；本地仓库可以用 Local Git Gate，其他 CI 可以用 recipes。
-- 不是把 LLM 判断包装成确定性事实的工具；finding 必须有仓库证据。
+| 入口 | 行为 |
+|------|------|
+| `check`、`doctor`、`diagnose`、`verify`、`recipes`、`agent-eval`、`draft`、`validate` | 读取仓库并输出报告、提示、patch proposal 或校验结果。 |
+| `app` / `serve` | 启动本地 Web UI，缺少配置时会创建 `.evidoc/config.json` 和 `.evidoc/.gitignore`。 |
+| `init --yes` | 写入 `.evidoc/config.json` 和 GitHub Actions workflow。 |
+| `init --local-git --install-hooks` | 写入 repo-local hooks，并设置当前仓库的 `core.hooksPath=.githooks`。 |
+| `fix --safe --write --json` | 只应用确定性的 safe fixes，并输出 JSON 结果。 |
 
-如果你只是想判断自己该不该用 Evidoc，读到这里就够了。下面是给维护者、集成者和贡献者看的产品边界。
+## 核心检测范围
+
+- 文档里的命令是否仍然匹配 `package.json` 和当前包管理器。
+- Markdown links、路径、source symbols、frontmatter source bindings 是否仍然存在。
+- AGENTS.md、CLAUDE.md、Cursor rules、Copilot instructions 是否和仓库事实一致。
+- OpenAPI operation、request schema、response schema 是否和 spec 一致。
+- changed source files 是否需要对应文档覆盖。
+- review log 是否仍然有效，过期 override 是否需要重新复核。
 
 ## 为什么需要 Evidoc
 
 AI 编程工具的输入会决定它的输出。仓库文档、AGENTS.md、CLAUDE.md、README、API 示例和架构说明已经是 agent 的事实源。
 
-如果事实源漂移，agent 不会显式报错，而是会基于旧事实生成看似合理的错误变更。因此文档漂移不是内容品控问题，而是上下文污染问题。上下文污染需要进入工程控制流，像测试、类型检查和 lint 一样被检测、解释、审查和阻断。
+如果事实源漂移，agent 会基于旧事实生成看似合理的错误变更。Evidoc 把文档可信度放进工程控制流，让文档、agent 指令、CI 和 repair workflow 使用同一份当前证据。
 
-## 产品边界和目标状态
+## 安全和控制承诺
 
-Evidoc 的完整目标状态是一个 repo-local、open-source-first 的文档漂移控制平面：
-
-- CLI 可以在任意仓库一键启动本地 GUI，也可以只读扫描并输出证据报告。
-- Local App 可以自动初始化配置、扫描当前或多个本地仓库，并在中英双语 Command Center 中展示红黄绿健康状态、finding 证据、文件入口、历史、本地 Git 门禁状态、漂移队列、修复控制台、本地 Git 门禁启用动作和 GitHub Action 生成动作。
-- Local Git Gate 可以在没有 GitHub、不能上传 GitHub 或不适合启用 GitHub Actions 的仓库中，用 repo-local Git hook 和本地报告阻断漂移。
-- GitHub Action 可以在 PR 中给出 advisory 或 gate。
-- MCP server 可以让 Codex、Claude Code、OpenCode、Cursor Agent 或内网自研 agent 查询当前仓库文档健康度。Codex、Claude Code、OpenCode 是首批重点适配入口，不是协议上限。
-- Agent Runtime Contract 可以把 CLI、本地 Git hook、MCP、Local App 和 agent skill 的结果收口成同一份事实：事件、模式、scope、baseline、可选 baselineCommit、状态、generatedAt/scannedAt、changedFileFingerprints 和 fingerprint。
-  aggregate `runtime.fingerprint` 会纳入 event、mode、scope、baseline、受影响文档、changed files、changed-file fingerprints 和 finding fingerprints，但忽略单纯的时间戳变化。
-  对话里的提醒先用 changedFiles 与内容指纹拒绝旧报告，旧报告才回退时间戳，再按 finding fingerprint 去重，避免同一漂移被多个入口重复刷屏。
-- Graph layer 可以连接文档、代码符号、配置、API spec、命令、测试、ADR 和 agent instruction。
-- Evidence pack 可以把每个 finding 解释到具体文档片段、代码变更和规则。
-- Patch agent 可以基于证据生成可审查 diff，并由 validator 检查 patch 是否忠于证据。
-- Review log 可以记录人类确认、override、过期时间和责任人。
-
-## 完成定义
-
-当前阶段的“全部完成”不是商业化 SaaS，也不是把所有可能的检测器一次性穷尽；它指选定产品面的端到端能力都已成为真实、可运行、可测试的代码路径：
-
-- CLI 支持一键 `npx repo-evidoc` 本地 App、`app` / `serve` GUI 入口、本地扫描、本地 Git `guard` 门禁、通用 CI recipes、仓库 index、finding explain、图谱、dashboard、patch draft、patch validate、多仓库聚合和 GitHub Action 等价入口。
-- Local App 支持自动配置、系统文件夹选择、扫描历史、中英双语本地 Command Center、多仓库状态、本地 Git 门禁面板、staged/unstaged 变更、受影响文档、最近一次本地门禁结果的 gate baseline、baseline commit、runtime status、fingerprint 与 freshness、一键启用 Local Git Gate、一键生成 GitHub Action、打开 finding 文件入口、漂移队列、修复控制台和 watch refresh。
-- GitHub Action 是真实 composite action，可以在 CI 中安装、构建并运行 Evidoc。
-- MCP server 提供 JSON-RPC `initialize`、`tools/list`、`tools/call`，默认只读；`evidoc.agent_scan`、`evidoc.get_drift_status`、`evidoc.diagnose_drift` 和 `evidoc.suggest_doc_fix` 都复用 core scan 与 Agent Runtime Contract；patch draft/validate 属于只读工具，review-log 写入必须显式授权，并且所有 `root` 都必须落在 MCP server 的 `cwd` 边界内。
-- Core detector 覆盖路径、Markdown link、包管理器/script、`npx` 包管理器漂移、OpenAPI operation、单向 request/response schema、source symbol、frontmatter source、changed-source 文档覆盖策略、review TTL。
-- Core 提供统一 path-safety 原语，读路径、patch 写入、Local App 打开文件和 MCP review log 写入都必须通过真实路径边界检查。
-- Frontmatter 支持 source binding 解析、验证、序列化和 backfill。
-- Graph layer 输出 document/source/symbol/API/rule 节点和 evidence 边。
-- Patcher 支持确定性 diff、LLM evidence request、patch response validator。
-- Review log 支持 append-only JSONL、过期判断和 finding 绑定。
-- Dashboard 可以输出静态 HTML 报告和本地 Command Center 界面。
-- Release pipeline 能在 GitHub Actions 里 build/test/self-scan，并为 tag 生成 package artifacts；本地 `release:smoke:npx` 必须从当前源码重新打包，不能复用陈旧 tarball；每个 workspace 包在 publish 前必须验证构建产物存在。
-
-这一定义刻意排除了默认云端上传、默认自动修改仓库、默认调用 LLM、默认 npm publish。后续增强可以继续扩大 detector 集合和 provider 集成，但不能破坏上述安全边界。
-
-## 开源定位
-
-当前项目按开源项目建设，暂不按商业 SaaS 建设。不做默认云端上传，不做付费转化漏斗，不把组织 dashboard 放在首要路径。
-
-这不等于缩小产品目标。实施会按可验证纵切推进，但每条纵切都必须接入最终架构，不允许做一个以后要扔掉的 MVP。
-
-## 产品红线
-
-- 不默认修改用户仓库。
-- 不默认静默修改全局 Git 配置；本地 hook 只使用 repo-local `core.hooksPath`，且必须由用户显式启用或选择 `--install-hooks`。
-- 不默认执行文档中的 shell 命令。
-- 不默认把私有代码交给 LLM。
-- 不把 LLM 判断伪装成确定性事实。
-- 不输出没有证据的 finding。
-- 不让 agent 为了通过检查删除 source binding、frontmatter 或 review log。
-- 不让本地 GUI 对未添加、未 realpath 归一化或不存在的仓库 root 执行扫描、打开文件、脚手架或 CI 写入动作。
-- 不让本地 GUI 接受跨站浏览器写请求或无限制请求体。
-- 不让路径、patch proposal、review-log finding id 通过 `..`、绝对路径、换行、NUL 或 symlink 逃出仓库边界。
-- 不让 MCP `allowWrites=true` 变成任意本机路径写入权限；写工具仍必须限制在 server `cwd` 内。
-- 不让 GitHub Action safe auto-fix 把 `..`、绝对路径、drive separator、空段、NUL、LF、CR 或 realpath 逃逸路径交给 `git add`。
-- 不把本地仓库绝对路径发送给外部 LLM patch provider。
-- 不让不同入口各自发明漂移判断；CLI、MCP、Local App、Git hook 和 agent skill 必须复用同一个 core report 和 runtime fingerprint。
-- 不把旧构建产物当成当前版本的发布验证证据。
-- 不开发、发布或规划独立安装应用；GitHub 集成边界止于用户显式添加的 GitHub Action，非 GitHub 仓库走 Local Git Gate 和通用本地 CLI recipes。
+- 普通扫描基于本地仓库证据运行，仓库内容默认留在本机。
+- 外部 patch provider 是显式 opt-in；私有仓库内容默认留在本地。
+- CLI、Local Git Gate、Local App、GitHub Action、MCP tools 复用同一份 core report 和 runtime fingerprint。
+- GitHub 是可选入口；本地仓库和非 GitHub CI 可以使用 Local Git Gate 与 recipes。
+- Finding 必须绑定具体 evidence：文档片段或 agent 指令 claim、相关代码/配置/API 证据、rule trigger 和复核原因。
+- Patch draft、repair prompt、safe fix 和 review log 都绑定 finding 证据。
+- MCP 写入工具需要显式授权，并且写入路径受 server `cwd` 和仓库 realpath 边界限制。
+- Agent repair prompt 会要求保留 source binding、frontmatter 和 review log，不通过删除证据来绕过检查。
+- 写入动作通过明确命令触发，patch proposal 先进入 review 和 validation。

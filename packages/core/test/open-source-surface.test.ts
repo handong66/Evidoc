@@ -149,7 +149,7 @@ test("public product docs do not promise an installed application path", async (
 test("README GitHub Action examples keep PR comments visible by default", async () => {
   const readme = await readFile(join(root, "README.md"), "utf8");
   const actionStart = readme.indexOf("\n## GitHub Action\n");
-  const actionEnd = readme.indexOf("\n## Principles and Troubleshooting", actionStart);
+  const actionEnd = readme.indexOf("\n## How Evidoc Works", actionStart);
   const actionSection = readme.slice(actionStart, actionEnd);
 
   assert.match(actionSection, /name: Evidoc/);
@@ -190,7 +190,7 @@ test("public docs present npx adoption as the current npm path", async () => {
   assert.doesNotMatch(readme, /npx evidoc/);
   assert.match(readme, /Node\.js 22 or later/);
   assert.match(onboarding, /Node\.js 22 or later/);
-  assert.match(markdownSection(readme, "Choose an Adoption Path"), /npx repo-evidoc diagnose/);
+  assert.match(markdownSection(readme, "Who Uses Evidoc"), /npx repo-evidoc diagnose/);
   assert.match(markdownSection(readme, "Useful Commands"), /npx repo-evidoc doctor/);
   assert.match(markdownSection(readme, "Useful Commands"), /npx repo-evidoc fix --safe --write --json/);
   assert.match(markdownSection(readme, "Useful Commands"), /npx repo-evidoc agent-eval --json/);
@@ -198,7 +198,7 @@ test("public docs present npx adoption as the current npm path", async () => {
   assert.doesNotMatch(readme, /^## For Humans$/m);
   assert.doesNotMatch(readme, /^## For AI Agents$/m);
   assert.doesNotMatch(markdownSection(readme, "Local Git Gate Adoption"), /guard --scope staged/);
-  assert.match(markdownSection(readme, "Principles and Troubleshooting"), /guard --event manual --scope staged/);
+  assert.match(markdownSection(readme, "Troubleshooting"), /guard --event manual --scope staged/);
   assert.match(onboarding, /guard --event manual --scope staged/);
   assert.match(readme, /Generated workflows from `init` and the local app try to detect the repository branch from remote HEAD metadata or the current branch/);
   assert.match(onboarding, /Generated workflows from `init` and the local app try to detect the repository branch from remote HEAD metadata or the current branch/);
@@ -215,8 +215,8 @@ test("public README keeps the beginner path low-cognition", async () => {
   assert.ok(h2Count <= 13, `README has ${h2Count} h2 sections`);
   assert.match(firstScreen, /## Start Here/);
   assert.match(firstScreen, /The npm package name is `repo-evidoc`; the installed command name is `evidoc`/);
-  assert.match(firstScreen, /## What Changes When I Run It/);
-  assert.match(firstScreen, /## Understand The Result/);
+  assert.match(firstScreen, /## Who Uses Evidoc/);
+  assert.match(firstScreen, /## Product Surfaces/);
   assert.doesNotMatch(firstScreen, /Agent Runtime Contract|runtime\.fingerprint|patch classifications/);
   assert.ok(documentsLine > 0 && documentsLine <= 150, `Documents section starts at line ${documentsLine}`);
   assert.match(markdownSection(readme, "Documents"), /Read this when/);
@@ -225,33 +225,65 @@ test("public README keeps the beginner path low-cognition", async () => {
 test("public docs explain real user stories before promotion", async () => {
   const readme = await readFile(join(root, "README.md"), "utf8");
   const pursuitGoal = await readFile(join(root, "docs", "vision", "pursuit-goal.zh-CN.md"), "utf8");
-  const stories = markdownSection(readme, "Common User Stories");
+  const stories = markdownSection(readme, "Who Uses Evidoc");
+  const productSurfaces = markdownSection(readme, "Product Surfaces");
 
-  assert.match(markdownSection(readme, "Who Is Evidoc For"), /repository knowledge still reflects current code/);
-  assert.match(stories, /Maintainers need README commands, paths, APIs, and examples to stay current before merge/);
+  assert.match(stories, /humans, CI, and AI coding agents/);
+  assert.match(stories, /Maintainers want README commands, paths, APIs, and examples to stay current before merge/);
   assert.match(stories, /Teams using AGENTS\.md, CLAUDE\.md, Cursor rules, or Copilot instructions/);
   assert.match(stories, /Private, local-only, or air-gapped repositories/);
-  assert.match(stories, /GitHub PR reviewers/);
+  assert.match(stories, /Reviewers want PR comments/);
+  assert.match(stories, /Local Web UI \/ Command Center/);
   assert.match(stories, /Codex/);
   assert.match(stories, /Claude Code/);
   assert.match(stories, /OpenCode/);
-  assert.match(stories, /Platform and tooling teams/);
+  assert.match(stories, /Cursor/);
+  assert.match(stories, /Platform teams want drift evidence/);
+  assert.match(stories, /Architecture and API maintainers/);
+  assert.match(stories, /Teams that need audit trails/);
+  assert.match(stories, /Review log and runtime fingerprints/);
   assert.match(stories, /Open-source maintainers/);
   assert.match(stories, /npx repo-evidoc verify --instructions --json/);
   assert.match(stories, /npx repo-evidoc diagnose/);
   assert.match(stories, /npx repo-evidoc doctor/);
-  assert.match(markdownSection(readme, "Documents"), /Chinese user stories and command choices/);
-  assert.match(pursuitGoal, /^# Evidoc 用户故事/m);
+  assert.match(stories, /evidoc\.agent_scan/);
+  assert.match(productSurfaces, /GitHub Action/);
+  assert.match(productSurfaces, /MCP server/);
+  assert.match(productSurfaces, /evidoc\.get_drift_status/);
+  assert.match(productSurfaces, /Reports and graph/);
+  assert.match(productSurfaces, /Repair workflow/);
+  assert.match(markdownSection(readme, "Documents"), /Chinese feature guide, user stories, and product surfaces/);
+  assert.match(pursuitGoal, /^# Evidoc 中文指南：功能、用户故事和使用场景/m);
   assert.doesNotMatch(pursuitGoal, /^# Evidoc 追求目标/m);
-  assert.match(pursuitGoal, /## 我是谁，应该用哪个命令？/);
+  assert.doesNotMatch(pursuitGoal, /^# Evidoc 用户故事/m);
+  assert.doesNotMatch(pursuitGoal, /## Evidoc 不是什么/);
+  assert.match(pursuitGoal, /## Evidoc 能做什么/);
+  assert.match(pursuitGoal, /## 真实用户故事/);
   assert.match(pursuitGoal, /README 里的命令、路径、API 或示例可能已经过期/);
-  assert.match(pursuitGoal, /## Evidoc 会不会改我的仓库？/);
+  assert.match(pursuitGoal, /## 写入由你选择/);
+  assert.match(pursuitGoal, /本地 Web UI \/ Command Center/);
+  assert.match(pursuitGoal, /GitHub Action/);
+  assert.match(pursuitGoal, /MCP tools/);
   assert.match(pursuitGoal, /Codex/);
   assert.match(pursuitGoal, /Claude Code/);
   assert.match(pursuitGoal, /OpenCode/);
+  assert.match(pursuitGoal, /Cursor Agent/);
   assert.match(pursuitGoal, /npx repo-evidoc check --fail-on=review_needed/);
   assert.match(pursuitGoal, /npx repo-evidoc verify --instructions --json/);
   assert.match(pursuitGoal, /npx repo-evidoc recipes --target all/);
+  assert.match(pursuitGoal, /npx repo-evidoc agent-eval --json/);
+  assert.match(pursuitGoal, /npx repo-evidoc draft --json/);
+  assert.match(pursuitGoal, /npx repo-evidoc validate --proposal <proposal-file> --json/);
+  assert.match(pursuitGoal, /evidoc\.agent_scan/);
+  assert.match(pursuitGoal, /evidoc\.get_drift_status/);
+  assert.match(pursuitGoal, /JSON reports/);
+  assert.match(pursuitGoal, /Graph 和 evidence/);
+  assert.match(pursuitGoal, /Review log 和 runtime fingerprint/);
+  assert.match(pursuitGoal, /safe fixes/);
+  assert.match(pursuitGoal, /Finding 必须绑定具体 evidence/);
+  assert.match(pursuitGoal, /MCP 写入工具需要显式授权/);
+  assert.match(pursuitGoal, /source binding、frontmatter 和 review log/);
+  assert.match(pursuitGoal, /外部 patch provider 是显式 opt-in/);
 });
 
 test("public action docs keep security-events permission opt-in for SARIF", async () => {
@@ -307,7 +339,7 @@ test("public docs describe agent evaluation, MCP default, and telemetry boundary
     assert.match(text, /agent-eval --json/);
     assert.match(text, /evidoc\.agent_scan/);
     assert.match(text, /Telemetry is disabled by default|telemetry is disabled by default/i);
-    assert.match(text, /does not call external agent providers|do not upload repository content/i);
+    assert.match(text, /keep repository content local by default|does not call external agent providers|do not upload repository content/i);
   }
 
   const mcpClients = await readFile(join(root, "docs/development/mcp-clients.md"), "utf8");
