@@ -1,5 +1,7 @@
 # Onboarding
 
+This page is the guided setup reference. If you are brand new, start with the README first and come here only after you know which path you want: one scan, local Git gate, GitHub Action, or local Web UI.
+
 Evidoc is designed for copy-paste adoption. A new repository should not need to learn the rule system before it can run a first scan.
 
 The npm package is the default adoption path. Local Git mode is first-class for repositories that are not on GitHub, cannot upload to GitHub, or should keep the gate entirely inside the local checkout.
@@ -11,6 +13,25 @@ npx repo-evidoc check --fail-on=review_needed
 npx repo-evidoc app
 npx repo-evidoc init --yes --local-git --install-hooks
 ```
+
+## If You Only Need One Path
+
+| Situation | Command | What happens |
+|-----------|---------|--------------|
+| Try Evidoc safely | `npx repo-evidoc demo` | Opens a temporary sample repository with intentional drift. |
+| Scan without setup writes | `npx repo-evidoc check --fail-on=review_needed` | Prints terminal findings and exits. |
+| Use the local Web UI | `npx repo-evidoc app` | Auto-initializes local config if needed, scans, and opens the Command Center. |
+| Keep everything local | `npx repo-evidoc init --yes --local-git --install-hooks` | Writes repo-local hooks and ignored local reports. |
+| Add GitHub PR comments | `npx repo-evidoc init --yes` | Writes config and a GitHub Actions workflow. |
+
+The package name is `repo-evidoc`; the executable command installed by the package is `evidoc`. For copy-paste npm usage, keep using `npx repo-evidoc ...`.
+
+## What Gets Written
+
+- `check`, `doctor`, `diagnose`, `verify`, `recipes`, and `agent-eval` are read-only scans or generators unless redirected by the shell.
+- `app` and bare `npx repo-evidoc` may create `.evidoc/config.json` and `.evidoc/.gitignore` so local scan history stays out of commits.
+- `init --yes` writes `.evidoc/config.json`, `.evidoc/.gitignore`, and either a GitHub Actions workflow or local hooks.
+- `fix --safe --write --json` writes only deterministic safe fixes and requires the explicit `--safe` flag.
 
 A local agent or human can also run Evidoc against another repository from a source checkout when testing unreleased changes:
 

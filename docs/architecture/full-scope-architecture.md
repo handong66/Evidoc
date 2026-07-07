@@ -1,5 +1,9 @@
 # Evidoc Full-Scope Architecture
 
+This is a maintainer and integrator reference, not the first document a new user should read. If you only want to run Evidoc, use the README or `docs/onboarding.md`.
+
+In one minute: Evidoc has one core scanner, and every surface reuses that evidence instead of inventing its own drift status. The CLI, local Web UI, Local Git hooks, GitHub Action, MCP server, reports, graph, patch proposals, and review log all work from the same repository-local evidence model.
+
 Evidoc is organized as a full product from the first commit. Individual releases may expose only part of the surface, but package boundaries should already match the final system.
 
 ## Product Surfaces

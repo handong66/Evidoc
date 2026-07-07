@@ -18,6 +18,9 @@
   "dependencies": {
     "@handong66/evidoc-cli": "0.1.0"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",

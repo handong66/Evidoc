@@ -1,5 +1,15 @@
 # Evidoc 追求目标
 
+如果你只是第一次使用 Evidoc，先看仓库根目录的 `README.md`，然后运行：
+
+```bash
+npx repo-evidoc demo
+npx repo-evidoc check --fail-on=review_needed
+npx repo-evidoc app
+```
+
+这篇文档解释“为什么 Evidoc 值得做”和“完整产品边界是什么”，不是安装手册。
+
 Evidoc 追求的不是“帮项目多写一点文档”，而是让仓库里的知识成为可验证、可审计、可被 agent 安全消费的工程资产。
 
 第一性原理判断如下：

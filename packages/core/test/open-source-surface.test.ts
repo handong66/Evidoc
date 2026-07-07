@@ -49,6 +49,8 @@ test("declares publishable packages including npx repo-evidoc", async () => {
   assert.notEqual(rootPackage.private, true);
   assert.equal(npxPackage.name, "repo-evidoc");
   assert.equal(npxPackage.bin.evidoc, "dist/src/index.js");
+  assert.equal(npxPackage.engines.node, ">=22");
+  assert.equal(cliPackage.engines.node, ">=22");
   assert.equal(cliPackage.bin, undefined);
   assert.ok(rootPackage.scripts["release:notes"]);
 });
@@ -147,9 +149,10 @@ test("public product docs do not promise an installed application path", async (
 test("README GitHub Action examples keep PR comments visible by default", async () => {
   const readme = await readFile(join(root, "README.md"), "utf8");
   const actionStart = readme.indexOf("\n## GitHub Action\n");
-  const actionEnd = readme.indexOf("\n## Product Principles", actionStart);
+  const actionEnd = readme.indexOf("\n## Principles and Troubleshooting", actionStart);
   const actionSection = readme.slice(actionStart, actionEnd);
 
+  assert.match(actionSection, /name: Evidoc/);
   assert.match(actionSection, /pr-comment: "true"/);
   assert.match(actionSection, /fail-on: review_needed/);
   assert.doesNotMatch(actionSection, /fail-on: broken/);
@@ -188,15 +191,35 @@ test("public docs present npx adoption as the current npm path", async () => {
   assert.match(readme, /Node\.js 22 or later/);
   assert.match(onboarding, /Node\.js 22 or later/);
   assert.match(markdownSection(readme, "Choose an Adoption Path"), /npx repo-evidoc diagnose/);
-  assert.match(markdownSection(readme, "For Humans"), /npx repo-evidoc doctor/);
-  assert.match(markdownSection(readme, "For Humans"), /npx repo-evidoc fix --safe --write --json/);
-  assert.match(markdownSection(readme, "For AI Agents"), /npx repo-evidoc agent-eval --json/);
-  assert.match(markdownSection(readme, "For AI Agents"), /evidoc\.agent_scan/);
+  assert.match(markdownSection(readme, "Useful Commands"), /npx repo-evidoc doctor/);
+  assert.match(markdownSection(readme, "Useful Commands"), /npx repo-evidoc fix --safe --write --json/);
+  assert.match(markdownSection(readme, "Useful Commands"), /npx repo-evidoc agent-eval --json/);
+  assert.match(markdownSection(readme, "Useful Commands"), /evidoc\.agent_scan/);
+  assert.doesNotMatch(readme, /^## For Humans$/m);
+  assert.doesNotMatch(readme, /^## For AI Agents$/m);
   assert.doesNotMatch(markdownSection(readme, "Local Git Gate Adoption"), /guard --scope staged/);
-  assert.match(markdownSection(readme, "Troubleshooting"), /guard --event manual --scope staged/);
+  assert.match(markdownSection(readme, "Principles and Troubleshooting"), /guard --event manual --scope staged/);
   assert.match(onboarding, /guard --event manual --scope staged/);
   assert.match(readme, /Generated workflows from `init` and the local app try to detect the repository branch from remote HEAD metadata or the current branch/);
   assert.match(onboarding, /Generated workflows from `init` and the local app try to detect the repository branch from remote HEAD metadata or the current branch/);
+});
+
+test("public README keeps the beginner path low-cognition", async () => {
+  const readme = await readFile(join(root, "README.md"), "utf8");
+  const lines = readme.trimEnd().split(/\r?\n/);
+  const firstScreen = lines.slice(0, 80).join("\n");
+  const h2Count = readme.match(/^## /gm)?.length ?? 0;
+  const documentsLine = lines.findIndex((line) => line === "## Documents") + 1;
+
+  assert.ok(lines.length <= 280, `README has ${lines.length} lines`);
+  assert.ok(h2Count <= 13, `README has ${h2Count} h2 sections`);
+  assert.match(firstScreen, /## Start Here/);
+  assert.match(firstScreen, /The npm package name is `repo-evidoc`; the installed command name is `evidoc`/);
+  assert.match(firstScreen, /## What Changes When I Run It/);
+  assert.match(firstScreen, /## Understand The Result/);
+  assert.doesNotMatch(firstScreen, /Agent Runtime Contract|runtime\.fingerprint|patch classifications/);
+  assert.ok(documentsLine > 0 && documentsLine <= 150, `Documents section starts at line ${documentsLine}`);
+  assert.match(markdownSection(readme, "Documents"), /Read this when/);
 });
 
 test("public docs explain real user stories before promotion", async () => {
@@ -229,8 +252,15 @@ test("public action docs keep security-events permission opt-in for SARIF", asyn
   for (const docPath of ["README.md", "docs/onboarding.md"]) {
     const text = await readFile(join(root, docPath), "utf8");
     const sarifFalseBlocks = yamlBlocks(text).filter((block) => /sarif:\s*"false"/.test(block));
+    const fullWorkflowBlocks = yamlBlocks(text).filter(
+      (block) => /jobs:\n[\s\S]*handong66\/Evidoc\/packages\/github-action/.test(block)
+    );
 
     assert.ok(sarifFalseBlocks.length > 0, `${docPath} should include at least one sarif false workflow example`);
+    assert.ok(fullWorkflowBlocks.length > 0, `${docPath} should include a full workflow example`);
+    for (const block of fullWorkflowBlocks) {
+      assert.match(block, /^name:\s*Evidoc$/m, `${docPath} full workflow should name the Actions run`);
+    }
     for (const block of sarifFalseBlocks) {
       assert.doesNotMatch(block, /security-events:\s*write/);
     }

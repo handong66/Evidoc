@@ -22,6 +22,9 @@
     "@handong66/evidoc-patcher": "0.1.0",
     "@handong66/evidoc-reports": "0.1.0"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",

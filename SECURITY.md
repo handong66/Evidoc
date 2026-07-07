@@ -2,6 +2,8 @@
 
 Evidoc scans repository content and can expose evidence to local tools. The default design keeps scans local and avoids automatic source upload.
 
+For normal users, the important rule is simple: ordinary CLI scans, the local Web UI, GitHub Action scans, and MCP read tools do not upload repository content to third-party model providers by default. Write paths require explicit commands such as `init`, Local Git hook setup, review-log writes, or `fix --safe --write`.
+
 ## Supported Versions
 
 Security fixes are provided for the latest published minor line.

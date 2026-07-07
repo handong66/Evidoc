@@ -1,8 +1,21 @@
 # Evidoc Configuration
 
+Most users do not need to edit this file before a first scan. Read this page when `doctor` says config is stale, when no documents are scanned, or when you want to narrow/expand what Evidoc checks.
+
 Evidoc reads `.evidoc/config.json` from the repository root. The file is optional; defaults are intentionally conservative and scan Markdown control surfaces in the repository.
 
 `npx repo-evidoc` and `npx repo-evidoc init --yes` also maintain `.evidoc/.gitignore` with `history.jsonl` and `reports/` so local Command Center scan history and Local Git Gate reports stay out of commits. Commit the config and `.evidoc/.gitignore`; leave generated history and reports local.
+
+## Beginner Defaults
+
+If you are unsure, keep the generated config and run:
+
+```bash
+npx repo-evidoc doctor
+npx repo-evidoc check --fail-on=review_needed
+```
+
+Only change `docRoots` when Evidoc is scanning too much or missing the docs you care about. Keep AGENTS.md, CLAUDE.md, Cursor rules, and Copilot instructions in scope when coding agents rely on them.
 
 ```json
 {
