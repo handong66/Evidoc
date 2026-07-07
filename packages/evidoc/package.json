@@ -6,7 +6,7 @@
     "prepublishOnly": "node ../../scripts/ensure-built-package.mjs"
   },
   "bin": {
-    "evidoc": "./dist/src/index.js"
+    "evidoc": "dist/src/index.js"
   },
   "exports": {
     ".": "./dist/src/index.js"
