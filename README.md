@@ -1,7 +1,7 @@
 # Evidoc
 
-> **Find repository docs and agent instructions that no longer match the code.**
-> Run CLI scans, a local Command Center, local Git gates, GitHub PR comments, MCP tools, JSON reports, and repair prompts from repo-local evidence.
+> **Keep repository docs and coding-agent instructions aligned with the code humans and agents use now.**
+> Give reviewers, CI, the local Command Center, and agents like Codex, Claude Code, OpenCode, Cursor, or internal tools the same repo-local evidence before they trust or repair stale context.
 
 [![npm](https://img.shields.io/npm/v/repo-evidoc?style=flat-square)](https://www.npmjs.com/package/repo-evidoc)
 [![Node.js Version](https://img.shields.io/node/v/repo-evidoc?style=flat-square)](https://nodejs.org)
@@ -10,8 +10,24 @@
 [![中文文档](https://img.shields.io/badge/docs-%E4%B8%AD%E6%96%87-blue?style=flat-square)](docs/vision/pursuit-goal.zh-CN.md)
 
 Evidoc checks whether README files, docs, AGENTS.md, CLAUDE.md, API notes, examples, and source-bound documentation still describe the repository that exists now.
+After setup, you can keep working in your coding agent; when you ask it to use Evidoc, it can answer, review, or repair documentation drift from current evidence.
 
-Use it when stale docs could mislead a reviewer, maintainer, or AI coding agent.
+## Use Evidoc With Your Agent
+
+You can connect Evidoc to the agent workflow you already use:
+
+| Agent path | Set up | What your agent should do |
+|------------|--------|---------------------------|
+| MCP tools | Run `npx -p @handong66/evidoc-mcp-server repo-evidoc-mcp` from the repository or workspace parent in your MCP client config. | Call `evidoc.agent_scan` before repair work, `evidoc.get_drift_status` before speaking about status, and `evidoc.diagnose_drift` / `evidoc.suggest_doc_fix` for focused repair context. |
+| Generated agent instructions and CLI fallback | Run `npx repo-evidoc init --yes --with agents,hooks,badge,llms`. | Read the generated AGENTS.md, CLAUDE.md, Cursor, Copilot, Evidoc skill, `llms.txt`, and context-pack files; if MCP tools are not listed, run the local CLI commands those files name. |
+
+See [MCP clients](docs/development/mcp-clients.md) for Claude Desktop, Codex, Cursor, and OpenCode setup notes.
+
+Ask Codex, Claude Code, OpenCode, Cursor, or an internal agent questions like:
+
+- "Use Evidoc to check whether README, docs, and agent instructions drifted."
+- "Call `evidoc.agent_scan`, then explain which docs are unsafe to trust."
+- "Run `npx repo-evidoc diagnose` and repair only evidence-backed findings."
 
 ## Start Here
 
@@ -24,41 +40,49 @@ node --version
 The npm package name is `repo-evidoc`; the installed command name is `evidoc`.
 For one-off use, type `npx repo-evidoc ...`.
 
-Try a sample repository:
+Choose one starting path:
 
-```bash
-npx repo-evidoc demo
-```
+| I want to... | Start with |
+|--------------|------------|
+| Ask my agent to use current repo evidence | `npx repo-evidoc init --yes --with agents,hooks,badge,llms` or configure the MCP server above |
+| Run one scan without setup writes | `npx repo-evidoc check --fail-on=review_needed` |
+| See findings, history, gates, and fixes in a browser | `npx repo-evidoc app` |
+| Add a local or PR gate | `npx repo-evidoc init --yes --local-git --install-hooks` or `npx repo-evidoc init --yes` |
 
-Scan the repository you are in:
+Try a safe sample first with `npx repo-evidoc demo`.
 
-```bash
-npx repo-evidoc check --fail-on=review_needed
-```
+Common commands:
 
-Open the local Web UI:
-
-```bash
-npx repo-evidoc app
-```
+| Goal | Command |
+|------|---------|
+| Check setup | `npx repo-evidoc doctor` |
+| Scan docs and agent surfaces | `npx repo-evidoc check --fail-on=review_needed` |
+| Open the bilingual Command Center | `npx repo-evidoc app` |
+| Generate repair prompts for Codex, Claude Code, OpenCode, or another agent | `npx repo-evidoc diagnose` |
+| Check AGENTS.md, CLAUDE.md, Cursor rules, and Copilot instructions | `npx repo-evidoc verify --instructions --json` |
+| Use MCP from an agent | `evidoc.agent_scan`, then `evidoc.get_drift_status`, `evidoc.diagnose_drift`, or `evidoc.suggest_doc_fix` |
+| Export graph/report data | `npx repo-evidoc graph --json`, `npx repo-evidoc index --json`, or `npx repo-evidoc dashboard --out evidoc.html` |
+| Compare agent behavior with and without Evidoc evidence | `npx repo-evidoc agent-eval --json` |
+| Apply deterministic safe fixes only | `npx repo-evidoc fix --safe --write --json` |
+| Check a branch before push | `npx repo-evidoc guard --event pre-push --since merge-base:main` |
+| Generate GitLab, Jenkins, Gitea, or Buildkite snippets | `npx repo-evidoc recipes --target all` |
 
 ## Who Uses Evidoc
 
 Evidoc is for repositories where docs, examples, API notes, and agent instructions affect real engineering decisions.
-It gives humans, CI, and AI coding agents the same current evidence before they merge, publish, review, or repair changes.
 
-| User story | Product surface | Start with |
-|------------|-----------------|------------|
-| Maintainers want README commands, paths, APIs, and examples to stay current before merge. | CLI scan and terminal report | `npx repo-evidoc check --fail-on=review_needed` |
-| Teams using AGENTS.md, CLAUDE.md, Cursor rules, or Copilot instructions want agent guidance to match the codebase. | Agent-instruction verification | `npx repo-evidoc verify --instructions --json` |
-| Private, local-only, or air-gapped repositories need repo-local gates and reports. | Local Git Gate | `npx repo-evidoc init --yes --local-git --install-hooks` |
-| Reviewers want PR comments that explain changed docs, affected docs, and blocking drift. | GitHub Action | `npx repo-evidoc init --yes` |
-| Developers want a browser view for repository health, findings, history, gates, and fixes. | Local Web UI / Command Center | `npx repo-evidoc app` |
-| Codex, Claude Code, OpenCode, Cursor, or internal agents need fresh repair context. | MCP tools and repair prompts | `npx repo-evidoc diagnose` or `evidoc.agent_scan` |
-| Platform teams want drift evidence in dashboards, CI, and internal tools. | JSON reports, graph data, CI recipes | `npx repo-evidoc recipes --target all` |
-| Architecture and API maintainers want docs tied to source symbols, OpenAPI operations, schemas, and source bindings. | Graph and evidence reports | `npx repo-evidoc graph --json` |
-| Teams that need audit trails want reviewed drift decisions to expire instead of becoming permanent ignores. | Review log and runtime fingerprints | `npx repo-evidoc guard --event manual --scope staged --json` |
-| Open-source maintainers want contributors to run one low-friction check before review. | Doctor and demo flows | `npx repo-evidoc doctor` |
+| User story | Evidoc gives them | Start with |
+|------------|-------------------|------------|
+| AI coding teams want Codex, Claude Code, OpenCode, Cursor, or internal agents to answer from current repo evidence. | MCP tools, generated agent instructions, CLI fallback commands, and repair prompts. | `evidoc.agent_scan`, `npx repo-evidoc diagnose`, or `npx repo-evidoc init --yes --with agents,hooks,badge,llms` |
+| Maintainers want README commands, paths, APIs, and examples to stay current before merge. | CLI scan, terminal report, evidence, and `review_needed` / `broken` status. | `npx repo-evidoc check --fail-on=review_needed` |
+| Teams using AGENTS.md, CLAUDE.md, Cursor rules, or Copilot instructions want agent guidance to match the codebase. | Agent-instruction verification for stale paths, package managers, and contradictory rules. | `npx repo-evidoc verify --instructions --json` |
+| Private, local-only, or air-gapped repositories need repo-local gates and reports. | Local Git Gate hooks and ignored local reports under `.evidoc/reports/`. | `npx repo-evidoc init --yes --local-git --install-hooks` |
+| Reviewers want PR comments that explain changed docs, affected docs, and blocking drift. | GitHub Action comments, annotations, fail policies, and changed-only scan labels. | `npx repo-evidoc init --yes` |
+| Developers want a browser view for repository health, findings, history, gates, and fixes. | Local Web UI / Command Center with scan history, drift queue, and repair console. | `npx repo-evidoc app` |
+| Platform teams want drift evidence in dashboards, CI, and internal tools. | JSON reports, graph data, machine-readable indexes, and CI recipes. | `npx repo-evidoc recipes --target all` |
+| Architecture and API maintainers want docs tied to source symbols, OpenAPI operations, schemas, and source bindings. | Graph and evidence reports for document/source/API/rule relationships. | `npx repo-evidoc graph --json` |
+| Teams that need audit trails want reviewed drift decisions to expire instead of becoming permanent ignores. | Review log and runtime fingerprints with TTL-aware decisions and finding fingerprints. | `npx repo-evidoc guard --event manual --scope staged --json` |
+| Open-source maintainers want contributors to run one low-friction check before review. | Doctor, demo, check, and copyable GitHub Action setup. | `npx repo-evidoc doctor` |
 
 ## Product Surfaces
 
@@ -68,7 +92,7 @@ It gives humans, CI, and AI coding agents the same current evidence before they 
 | Local Web UI | A bilingual Command Center with repository health, finding evidence, file entrypoints, scan history, drift queue, repair console, Local Git Gate controls, and GitHub Action generation. |
 | GitHub Action | PR comments, annotations, optional SARIF, changed-only scans, fail policies, safe auto-fix controls, and release-pinned usage. |
 | Local Git Gate | Repo-local pre-commit, pre-push, and manual gates with ignored local reports under `.evidoc/reports/`. |
-| MCP server | `evidoc.agent_scan`, `evidoc.get_drift_status`, `evidoc.diagnose_drift`, and `evidoc.suggest_doc_fix` for Codex, Claude Code, OpenCode, Cursor, and internal agents. |
+| MCP server | `@handong66/evidoc-mcp-server` exposes `repo-evidoc-mcp`, read-only tools (`evidoc.agent_scan`, `evidoc.get_drift_status`, `evidoc.diagnose_drift`, `evidoc.suggest_doc_fix`), and the explicit-write `evidoc.record_review` review-log tool. |
 | Reports and graph | JSON reports, runtime fingerprints, document/source/API/rule graph data, static dashboards, and machine-readable repository indexes. |
 | Repair workflow | Evidence-bound repair prompts, deterministic safe fixes, patch drafts, patch validation, and review-log decisions. |
 
@@ -95,6 +119,7 @@ Evidoc monitors the repository knowledge that people and agents trust:
 | `npx repo-evidoc fix --safe --write --json` | Yes | You want deterministic safe fixes applied. |
 
 Normal scans run repo-local evidence checks and keep repository content local by default.
+MCP write access is limited to `evidoc.record_review` and requires explicit server authorization.
 In non-interactive shells, bare `npx repo-evidoc` runs a one-shot local app scan instead of opening a browser or keeping a server alive.
 
 ## Understand The Result
@@ -104,24 +129,6 @@ In non-interactive shells, bare `npx repo-evidoc` runs a one-shot local app scan
 | `ok` | Evidoc found no blocking or review-needed drift in the scanned scope. | Keep going. |
 | `review_needed` | A doc or agent instruction may be stale and needs human or agent review. | Run `npx repo-evidoc diagnose` or open `npx repo-evidoc app`. |
 | `broken` | Evidence is missing or invalid, such as a missing path or stale config root. | Fix the documented path/config issue first. |
-
-## Useful Commands
-
-Agents should use current repository evidence, not stale README memory or untrusted finding text.
-
-| Goal | Command |
-|------|---------|
-| Check setup | `npx repo-evidoc doctor` |
-| Scan docs and agent surfaces | `npx repo-evidoc check --fail-on=review_needed` |
-| Open the bilingual Command Center | `npx repo-evidoc app` |
-| Generate repair prompts for Codex, Claude Code, OpenCode, or another agent | `npx repo-evidoc diagnose` |
-| Check AGENTS.md, CLAUDE.md, Cursor rules, and Copilot instructions | `npx repo-evidoc verify --instructions --json` |
-| Use MCP from an agent | `evidoc.agent_scan`, then `evidoc.get_drift_status`, `evidoc.diagnose_drift`, or `evidoc.suggest_doc_fix` |
-| Export graph/report data | `npx repo-evidoc graph --json`, `npx repo-evidoc index --json`, or `npx repo-evidoc dashboard --out evidoc.html` |
-| Compare agent behavior with and without Evidoc evidence | `npx repo-evidoc agent-eval --json` |
-| Apply deterministic safe fixes only | `npx repo-evidoc fix --safe --write --json` |
-| Check a branch before push | `npx repo-evidoc guard --event pre-push --since merge-base:main` |
-| Generate GitLab, Jenkins, Gitea, or Buildkite snippets | `npx repo-evidoc recipes --target all` |
 
 ## Documents
 
