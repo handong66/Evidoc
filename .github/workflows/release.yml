@@ -1,0 +1,75 @@
+name: Release Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish packages to npm.
+        required: false
+        default: "false"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  package:
+    name: Build package artifacts
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - name: Install dependencies
+        run: npm ci
+      - name: Build and test
+        run: npm test
+      - name: Create npm package tarballs
+        run: |
+          rm -rf .evidoc/release
+          mkdir -p .evidoc/release
+          for package in packages/*; do
+            if [ -f "$package/package.json" ]; then
+              npm pack "./$package" --pack-destination .evidoc/release
+            fi
+          done
+      - name: Smoke test npx package
+        run: npm run release:smoke:npx -- .evidoc/release
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidoc-packages
+          path: .evidoc/release/*.tgz
+      - name: Generate release notes
+        run: npm run release:notes > .evidoc/release/RELEASE_NOTES.md
+      - name: Attach artifacts to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: .evidoc/release/*.tgz
+          body_path: .evidoc/release/RELEASE_NOTES.md
+      - name: Publish packages to npm
+        if: ${{ (startsWith(github.ref, 'refs/tags/') || github.event.inputs.publish == 'true') && env.NODE_AUTH_TOKEN != '' }}
+        run: |
+          npm publish ./packages/core --access public --provenance
+          npm publish ./packages/reports --access public --provenance
+          npm publish ./packages/graph --access public --provenance
+          npm publish ./packages/frontmatter --access public --provenance
+          npm publish ./packages/dashboard --access public --provenance
+          npm publish ./packages/local-app --access public --provenance
+          npm publish ./packages/review-log --access public --provenance
+          npm publish ./packages/patcher --access public --provenance
+          npm publish ./packages/mcp-server --access public --provenance
+          npm publish ./packages/github-action --access public --provenance
+          npm publish ./packages/cli --access public --provenance
+          npm publish ./packages/evidoc --access public --provenance

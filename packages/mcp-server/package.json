@@ -1,0 +1,35 @@
+{
+  "name": "@handong66/evidoc-mcp-server",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "prepublishOnly": "node ../../scripts/ensure-built-package.mjs"
+  },
+  "exports": {
+    ".": "./dist/src/index.js"
+  },
+  "types": "./dist/src/index.d.ts",
+  "bin": {
+    "repo-evidoc-mcp": "./dist/src/index.js"
+  },
+  "files": [
+    "dist/src"
+  ],
+  "dependencies": {
+    "@handong66/evidoc-core": "0.1.0",
+    "@handong66/evidoc-patcher": "0.1.0",
+    "@handong66/evidoc-reports": "0.1.0",
+    "@handong66/evidoc-review-log": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/handong66/Evidoc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/handong66/Evidoc/issues"
+  },
+  "homepage": "https://github.com/handong66/Evidoc#readme"
+}

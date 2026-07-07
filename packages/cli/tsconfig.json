@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": ".",
+    "outDir": "dist"
+  },
+  "references": [
+    { "path": "../core" },
+    { "path": "../dashboard" },
+    { "path": "../graph" },
+    { "path": "../github-action" },
+    { "path": "../local-app" },
+    { "path": "../mcp-server" },
+    { "path": "../patcher" },
+    { "path": "../reports" }
+  ],
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts"
+  ]
+}

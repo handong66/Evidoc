@@ -1,0 +1,17 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/reports" },
+    { "path": "./packages/graph" },
+    { "path": "./packages/dashboard" },
+    { "path": "./packages/review-log" },
+    { "path": "./packages/frontmatter" },
+    { "path": "./packages/github-action" },
+    { "path": "./packages/mcp-server" },
+    { "path": "./packages/patcher" },
+    { "path": "./packages/local-app" },
+    { "path": "./packages/cli" },
+    { "path": "./packages/evidoc" }
+  ]
+}

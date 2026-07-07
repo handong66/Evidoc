@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.evidoc/reports/
+.evidoc/generated/
+.evidoc/release/
+.evidoc/history.jsonl
+.opencode-plugin-codex/
+.DS_Store
+*.log

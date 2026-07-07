@@ -1,0 +1,27 @@
+name: Feature request
+description: Propose a detector, interface, or workflow improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What documentation drift or agent-context failure should this prevent?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence Model
+      description: What deterministic evidence would support the finding?
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety Boundary
+      description: Does this require writes, network access, or LLM provider calls?
+    validations:
+      required: false

@@ -1,0 +1,34 @@
+{
+  "name": "@handong66/evidoc-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "prepublishOnly": "node ../../scripts/ensure-built-package.mjs"
+  },
+  "exports": {
+    ".": "./dist/src/index.js"
+  },
+  "types": "./dist/src/index.d.ts",
+  "files": [
+    "dist/src"
+  ],
+  "dependencies": {
+    "@handong66/evidoc-core": "0.1.0",
+    "@handong66/evidoc-dashboard": "0.1.0",
+    "@handong66/evidoc-github-action": "0.1.0",
+    "@handong66/evidoc-graph": "0.1.0",
+    "@handong66/evidoc-local-app": "0.1.0",
+    "@handong66/evidoc-mcp-server": "0.1.0",
+    "@handong66/evidoc-patcher": "0.1.0",
+    "@handong66/evidoc-reports": "0.1.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/handong66/Evidoc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/handong66/Evidoc/issues"
+  },
+  "homepage": "https://github.com/handong66/Evidoc#readme"
+}

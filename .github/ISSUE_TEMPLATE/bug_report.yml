@@ -1,0 +1,27 @@
+name: Bug report
+description: Report incorrect Evidoc behavior.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Behavior
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Minimal repository shape, document snippet, command, and output.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Paste the relevant Evidoc finding or report output. Redact private content.
+    validations:
+      required: false

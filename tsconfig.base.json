@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "baseUrl": ".",
+    "paths": {
+      "@handong66/evidoc-core": ["packages/core/src/index.ts"],
+      "@handong66/evidoc-cli": ["packages/cli/src/index.ts"],
+      "@handong66/evidoc-dashboard": ["packages/dashboard/src/index.ts"],
+      "evidoc": ["packages/evidoc/src/index.ts"],
+      "@handong66/evidoc-frontmatter": ["packages/frontmatter/src/index.ts"],
+      "@handong66/evidoc-github-action": ["packages/github-action/src/index.ts"],
+      "@handong66/evidoc-graph": ["packages/graph/src/index.ts"],
+      "@handong66/evidoc-local-app": ["packages/local-app/src/index.ts"],
+      "@handong66/evidoc-mcp-server": ["packages/mcp-server/src/index.ts"],
+      "@handong66/evidoc-patcher": ["packages/patcher/src/index.ts"],
+      "@handong66/evidoc-reports": ["packages/reports/src/index.ts"],
+      "@handong66/evidoc-review-log": ["packages/review-log/src/index.ts"]
+    },
+    "strict": true,
+    "declaration": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  }
+}

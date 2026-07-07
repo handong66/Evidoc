@@ -1,0 +1,33 @@
+{
+  "name": "@handong66/evidoc-repo",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "npm run build && node --test \"packages/*/dist/**/*.test.js\"",
+    "evidoc": "npm run build && node packages/cli/dist/src/index.js",
+    "release:notes": "node scripts/release-notes.mjs",
+    "release:smoke:npx": "node scripts/smoke-npx.mjs",
+    "prepublishOnly": "node scripts/prevent-root-publish.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/handong66/Evidoc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/handong66/Evidoc/issues"
+  },
+  "homepage": "https://github.com/handong66/Evidoc#readme"
+}

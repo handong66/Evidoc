@@ -1,0 +1,563 @@
+name: Evidoc
+description: Detect documentation drift in pull requests.
+inputs:
+  fail-on:
+    description: none, broken, or review_needed
+    required: false
+    default: review_needed
+  sarif:
+    description: Upload SARIF to GitHub code scanning when possible.
+    required: false
+    default: "false"
+  pr-comment:
+    description: Comment with the Evidoc summary on pull requests.
+    required: false
+    default: "false"
+  changed-only:
+    description: Scan changed Markdown documents plus docs affected by changed source, API, or package-manager evidence.
+    required: false
+    default: "false"
+  since:
+    description: Git ref used when changed-only is true. Defaults to origin/<default-branch> when omitted; use origin/<branch> or refs/heads/<branch> when the ref must be fetched in Actions.
+    required: false
+    default: ""
+  auto-fix:
+    description: Preview safe deterministic documentation fixes; write them only when same-repository auto-commit is enabled.
+    required: false
+    default: "false"
+  auto-commit:
+    description: Commit safe deterministic fixes back to same-repository PR branches.
+    required: false
+    default: "false"
+outputs:
+  health-score:
+    description: Evidoc health score from 0 to 100.
+    value: ${{ steps.publish.outputs.health-score }}
+  findings:
+    description: Total Evidoc findings.
+    value: ${{ steps.publish.outputs.findings }}
+  broken:
+    description: Broken findings.
+    value: ${{ steps.publish.outputs.broken }}
+  review-needed:
+    description: Review-needed findings.
+    value: ${{ steps.publish.outputs.review-needed }}
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+    - name: Build Evidoc from the GitHub action checkout
+      shell: bash
+      run: |
+        set -euo pipefail
+        EVIDOC_ACTION_ROOT="$(cd "$GITHUB_ACTION_PATH/../.." && pwd)"
+        echo "EVIDOC_ACTION_ROOT=$EVIDOC_ACTION_ROOT" >> "$GITHUB_ENV"
+        cd "$EVIDOC_ACTION_ROOT"
+        npm ci
+        npm run build
+    - name: Prepare changed-only baseline
+      if: ${{ inputs.changed-only == 'true' }}
+      shell: bash
+      env:
+        INPUT_SINCE: ${{ inputs.since }}
+        GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        mkdir -p .evidoc/reports
+        default_branch="${GITHUB_DEFAULT_BRANCH:-main}"
+        suggested_since="origin/${default_branch}"
+        requested_since="$INPUT_SINCE"
+        if [ -z "$requested_since" ]; then
+          requested_since="origin/${default_branch}"
+        fi
+        baseline_reason="The baseline was not available locally after Evidoc tried to prepare it."
+        if git rev-parse --verify --quiet "$requested_since^{commit}" >/dev/null; then
+          echo "EVIDOC_EFFECTIVE_SINCE=$requested_since" >> "$GITHUB_ENV"
+          exit 0
+        fi
+        case "$requested_since" in
+          origin/*)
+            branch="${requested_since#origin/}"
+            if ! git fetch --no-tags --depth=1 origin "+refs/heads/${branch}:refs/remotes/origin/${branch}"; then
+              baseline_reason="Evidoc tried to fetch branch '${branch}' from origin, but the ref was not found or could not be fetched."
+            fi
+            ;;
+          refs/heads/*)
+            branch="${requested_since#refs/heads/}"
+            if git fetch --no-tags --depth=1 origin "+refs/heads/${branch}:refs/remotes/origin/${branch}"; then
+              requested_since="origin/${branch}"
+              suggested_since="$requested_since"
+            else
+              baseline_reason="Evidoc tried to fetch branch '${branch}' from origin, but the ref was not found or could not be fetched."
+            fi
+            ;;
+          *)
+            if git ls-remote --exit-code --heads origin "$requested_since" >/dev/null 2>&1; then
+              suggested_since="origin/${requested_since}"
+              baseline_reason="The branch exists on origin, but the workflow used '${requested_since}'. Use '${suggested_since}' so Evidoc can fetch it in a shallow Actions checkout."
+            else
+              baseline_reason="The ref was not found locally and does not match Evidoc's auto-fetch patterns."
+            fi
+            echo "::warning::Evidoc changed-only baseline '$requested_since' is not available locally. Use an origin/* branch ref or fetch the baseline before running Evidoc."
+            ;;
+        esac
+        if git rev-parse --verify --quiet "$requested_since^{commit}" >/dev/null; then
+          echo "EVIDOC_EFFECTIVE_SINCE=$requested_since" >> "$GITHUB_ENV"
+          exit 0
+        fi
+        cat > .evidoc/reports/baseline-warning.md <<EOF
+
+        ## CI setup warnings
+
+        Evidoc changed-only baseline is unavailable, so this run is falling back to a full repository scan.
+
+        $baseline_reason
+
+        - Baseline: \`$requested_since\`
+        - Edit the Evidoc workflow step that uses \`handong66/Evidoc\`.
+        - Use \`since: origin/<branch>\`, or fetch the baseline ref before running Evidoc.
+        - For the default branch, use \`since: $suggested_since\`.
+        - This run already used a full scan fallback; temporarily set \`changed-only: "false"\` only if you want to avoid baseline setup while fixing \`since\`.
+        - After editing, re-run locally after the npm package is available: \`npx evidoc check --changed-only --since "$suggested_since" --fail-on=review_needed\`
+        - Before npm publication, run from an Evidoc source checkout with \`npm run evidoc -- check --changed-only --since "$suggested_since" --fail-on=review_needed --root <target-repository-root>\`.
+        EOF
+        echo "EVIDOC_CHANGED_ONLY=false" >> "$GITHUB_ENV"
+        echo "EVIDOC_BASELINE_WARNING=true" >> "$GITHUB_ENV"
+        echo "EVIDOC_EFFECTIVE_SINCE=$requested_since" >> "$GITHUB_ENV"
+        echo "::warning::Evidoc changed-only baseline '$requested_since' is unavailable; falling back to a full repository scan."
+        exit 0
+    - name: Run Evidoc
+      id: run
+      shell: bash
+      env:
+        INPUT_CHANGED_ONLY: ${{ inputs.changed-only }}
+        INPUT_SINCE: ${{ inputs.since }}
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        mkdir -p .evidoc/reports
+        args=(
+          action
+          --fail-on "${{ inputs.fail-on }}"
+          --annotations .evidoc/reports/annotations.txt
+          --sarif .evidoc/reports/evidoc.sarif
+          --summary .evidoc/reports/summary.md
+          --result .evidoc/reports/result.json
+        )
+        effective_changed_only="${EVIDOC_CHANGED_ONLY:-$INPUT_CHANGED_ONLY}"
+        if [ "$effective_changed_only" = "true" ]; then
+          args+=(--changed-only)
+          effective_since="${EVIDOC_EFFECTIVE_SINCE:-$INPUT_SINCE}"
+          if [ -n "$effective_since" ]; then
+            args+=(--since "$effective_since")
+          fi
+        fi
+        set +e
+        node "$EVIDOC_ACTION_ROOT/packages/evidoc/dist/src/index.js" "${args[@]}"
+        exit_code=$?
+        set -e
+        if [ -f .evidoc/reports/result.json ]; then
+          node - <<'NODE' >> "$GITHUB_OUTPUT"
+        const fs = require('node:fs');
+        const report = JSON.parse(fs.readFileSync('.evidoc/reports/result.json', 'utf8'));
+        const summary = report.summary || {};
+        console.log(`health-score=${summary.healthScore ?? 0}`);
+        console.log(`findings=${summary.findings ?? 0}`);
+        console.log(`broken=${summary.broken ?? 0}`);
+        console.log(`review-needed=${summary.reviewNeeded ?? 0}`);
+        NODE
+        fi
+        if [ -f .evidoc/reports/annotations.txt ]; then
+          cat .evidoc/reports/annotations.txt
+        fi
+        if [ -n "${EVIDOC_BASELINE_WARNING:-}" ] && [ -f .evidoc/reports/baseline-warning.md ] && [ -f .evidoc/reports/summary.md ]; then
+          tmp_summary="$(mktemp)"
+          {
+            head -n 1 .evidoc/reports/summary.md
+            cat .evidoc/reports/baseline-warning.md
+            tail -n +2 .evidoc/reports/summary.md
+          } > "$tmp_summary"
+          mv "$tmp_summary" .evidoc/reports/summary.md
+        fi
+        exit "$exit_code"
+    - name: Warn when fork pull request fixes cannot be committed
+      if: ${{ always() && inputs.auto-fix == 'true' && inputs.auto-commit == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+      shell: bash
+      run: |
+        echo "::warning::Fork pull request safe auto-fix and auto-commit are disabled; run Evidoc fix locally or push from the contributor branch."
+    - name: Explain auto-commit permissions
+      if: ${{ always() && inputs.auto-fix == 'true' && inputs.auto-commit == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      run: |
+        echo "::notice::Evidoc auto-commit requires workflow permissions contents: write and checks: write. Keep the default contents: read workflow unless auto-commit is explicitly enabled."
+    - name: Preview safe fixes when changes will not be committed
+      if: ${{ always() && inputs.auto-fix == 'true' && (inputs.auto-commit != 'true' || github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository) }}
+      shell: bash
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        set +e
+        node "$EVIDOC_ACTION_ROOT/packages/evidoc/dist/src/index.js" fix --safe --json > .evidoc/reports/fix.json
+        rc=$?
+        set -e
+        if [ "$rc" -ne 0 ]; then
+          echo "::warning::Evidoc safe auto-fix preview failed with exit code $rc"
+        fi
+        preview_count="$(
+          node - <<'NODE'
+        const fs = require('node:fs');
+        try {
+          const payload = JSON.parse(fs.readFileSync('.evidoc/reports/fix.json', 'utf8'));
+          console.log(Array.isArray(payload.proposals) ? payload.proposals.length : 'unknown');
+        } catch {
+          console.log('unknown');
+        }
+        NODE
+        )"
+        [ "$rc" = "0" ] && [ "$preview_count" = "0" ] && exit 0
+        echo "::warning::Evidoc safe auto-fix preview found $preview_count safe fix candidate(s), but this workflow will not commit them to the PR branch."
+        cat > .evidoc/reports/autofix-preview-warning.md <<EOF
+
+        ## Auto-fix preview
+
+        No safe fixes were committed to the pull request branch in this run.
+
+        Evidoc previewed $preview_count safe fix candidate(s), but this workflow cannot commit fixes back to the pull request branch unless \`auto-commit: "true"\` runs on a same-repository pull request with \`contents: write\` and \`checks: write\`.
+
+        - The report below still reflects the PR as submitted.
+        - Run \`npx evidoc fix --safe --write --json --root <target-repository-root>\` locally, or enable same-repository auto-commit after reviewing the permissions.
+        EOF
+        if [ -f .evidoc/reports/summary.md ]; then
+          tmp_summary="$(mktemp)"
+          {
+            head -n 1 .evidoc/reports/summary.md
+            cat .evidoc/reports/autofix-preview-warning.md
+            tail -n +2 .evidoc/reports/summary.md
+          } > "$tmp_summary"
+          mv "$tmp_summary" .evidoc/reports/summary.md
+        fi
+    - name: Back up submitted PR report before auto-commit
+      if: ${{ always() && inputs.auto-fix == 'true' && inputs.auto-commit == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        if [ -f .evidoc/reports/summary.md ]; then
+          cp .evidoc/reports/summary.md .evidoc/reports/submitted-summary.md
+        fi
+        if [ -f .evidoc/reports/result.json ]; then
+          cp .evidoc/reports/result.json .evidoc/reports/submitted-result.json
+        fi
+    - name: Check out pull request head for auto-commit
+      if: ${{ always() && inputs.auto-fix == 'true' && inputs.auto-commit == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      env:
+        EVIDOC_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        EVIDOC_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        git fetch --no-tags --depth=1 origin "+refs/heads/${EVIDOC_HEAD_REF}:refs/remotes/origin/${EVIDOC_HEAD_REF}"
+        git checkout -B evidoc-auto-fix "$EVIDOC_HEAD_SHA"
+    - name: Apply safe fixes
+      if: ${{ always() && inputs.auto-fix == 'true' && inputs.auto-commit == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        set +e
+        node "$EVIDOC_ACTION_ROOT/packages/evidoc/dist/src/index.js" fix --safe --write --json > .evidoc/reports/fix.json
+        rc=$?
+        set -e
+        if [ "$rc" -ne 0 ]; then
+          echo "::warning::Evidoc safe auto-fix failed with exit code $rc"
+        fi
+    - name: Refresh report after safe fixes
+      id: refresh
+      if: ${{ always() && inputs.auto-fix == 'true' && inputs.auto-commit == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      env:
+        INPUT_CHANGED_ONLY: ${{ inputs.changed-only }}
+        INPUT_SINCE: ${{ inputs.since }}
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        args=(
+          action
+          --fail-on "${{ inputs.fail-on }}"
+          --annotations .evidoc/reports/annotations.txt
+          --sarif .evidoc/reports/evidoc.sarif
+          --summary .evidoc/reports/summary.md
+          --result .evidoc/reports/result.json
+        )
+        effective_changed_only="${EVIDOC_CHANGED_ONLY:-$INPUT_CHANGED_ONLY}"
+        if [ "$effective_changed_only" = "true" ]; then
+          args+=(--changed-only)
+          effective_since="${EVIDOC_EFFECTIVE_SINCE:-$INPUT_SINCE}"
+          if [ -n "$effective_since" ]; then
+            args+=(--since "$effective_since")
+          fi
+        fi
+        set +e
+        node "$EVIDOC_ACTION_ROOT/packages/evidoc/dist/src/index.js" "${args[@]}"
+        exit_code=$?
+        set -e
+        if [ -f .evidoc/reports/result.json ]; then
+          node - <<'NODE' >> "$GITHUB_OUTPUT"
+        const fs = require('node:fs');
+        const report = JSON.parse(fs.readFileSync('.evidoc/reports/result.json', 'utf8'));
+        const summary = report.summary || {};
+        console.log(`health-score=${summary.healthScore ?? 0}`);
+        console.log(`findings=${summary.findings ?? 0}`);
+        console.log(`broken=${summary.broken ?? 0}`);
+        console.log(`review-needed=${summary.reviewNeeded ?? 0}`);
+        NODE
+        fi
+        if [ -f .evidoc/reports/annotations.txt ]; then
+          cat .evidoc/reports/annotations.txt
+        fi
+        if [ -n "${EVIDOC_BASELINE_WARNING:-}" ] && [ -f .evidoc/reports/baseline-warning.md ] && [ -f .evidoc/reports/summary.md ]; then
+          tmp_summary="$(mktemp)"
+          {
+            head -n 1 .evidoc/reports/summary.md
+            cat .evidoc/reports/baseline-warning.md
+            tail -n +2 .evidoc/reports/summary.md
+          } > "$tmp_summary"
+          mv "$tmp_summary" .evidoc/reports/summary.md
+        fi
+        exit "$exit_code"
+    - name: Commit safe fixes
+      if: ${{ always() && inputs.auto-fix == 'true' && inputs.auto-commit == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      env:
+        EVIDOC_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        if [ ! -f .evidoc/reports/fix.json ]; then
+          echo "No Evidoc safe fix report was produced."
+          exit 0
+        fi
+        changed_files="$(node - <<'NODE'
+        const fs = require('node:fs');
+        const path = require('node:path');
+        const payload = JSON.parse(fs.readFileSync('.evidoc/reports/fix.json', 'utf8'));
+        const workspace = fs.realpathSync(process.cwd());
+        function isPathInsideRoot(root, target) {
+          const relative = path.relative(root, target);
+          return Boolean(relative) && !relative.startsWith('..') && !path.isAbsolute(relative) && !relative.includes(':');
+        }
+        function normalizeSafeReportPath(value) {
+          if (typeof value !== 'string') return undefined;
+          const normalized = value.replaceAll('\\', '/');
+          if (
+            !normalized ||
+            normalized !== normalized.trim() ||
+            normalized.includes('\0') ||
+            normalized.includes('\n') ||
+            normalized.includes('\r') ||
+            normalized.startsWith('/') ||
+            normalized.includes(':')
+          ) {
+            return undefined;
+          }
+          if (normalized.split('/').some((part) => !part || part === '.' || part === '..')) {
+            return undefined;
+          }
+          const absolute = path.resolve(workspace, normalized);
+          let real;
+          try {
+            real = fs.realpathSync(absolute);
+          } catch {
+            return undefined;
+          }
+          if (!fs.statSync(real).isFile() || !isPathInsideRoot(workspace, real)) {
+            return undefined;
+          }
+          return normalized;
+        }
+        for (const item of payload.applied || []) {
+          const docPath = item ? normalizeSafeReportPath(item.docPath) : undefined;
+          if (docPath) {
+            console.log(docPath);
+          }
+        }
+        NODE
+        )"
+        if [ -z "$changed_files" ]; then
+          echo "No Evidoc safe fixes to commit."
+          exit 0
+        fi
+        git config user.name "evidoc-bot"
+        git config user.email "evidoc-bot@users.noreply.github.com"
+        while IFS= read -r path; do
+          [ -n "$path" ] && git add -- "$path"
+        done <<< "$changed_files"
+        if git diff --cached --quiet; then
+          echo "No Evidoc safe fixes to commit."
+          exit 0
+        fi
+        git commit -m "docs: apply Evidoc safe fixes"
+        autofix_sha="$(git rev-parse HEAD)"
+        git push origin "HEAD:${EVIDOC_HEAD_REF}"
+        echo "EVIDOC_AUTOFIX_SHA=$autofix_sha" >> "$GITHUB_ENV"
+    - name: Restore submitted PR report when auto-commit did not update branch
+      if: ${{ always() && inputs.auto-fix == 'true' && inputs.auto-commit == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$GITHUB_WORKSPACE"
+        [ -n "${EVIDOC_AUTOFIX_SHA:-}" ] && exit 0
+        applied_count="$(
+          node - <<'NODE'
+        const fs = require('node:fs');
+        try {
+          const payload = JSON.parse(fs.readFileSync('.evidoc/reports/fix.json', 'utf8'));
+          console.log(Array.isArray(payload.applied) ? payload.applied.length : 0);
+        } catch {
+          console.log(0);
+        }
+        NODE
+        )"
+        if [ "$applied_count" = "0" ]; then
+          exit 0
+        fi
+        echo "::warning::Evidoc safe auto-fix changed the Actions workspace, but no auto-fix commit was pushed to the PR branch."
+        if [ -f .evidoc/reports/submitted-result.json ]; then
+          mv .evidoc/reports/submitted-result.json .evidoc/reports/result.json
+        fi
+        if [ ! -f .evidoc/reports/submitted-summary.md ]; then
+          exit 0
+        fi
+        mv .evidoc/reports/submitted-summary.md .evidoc/reports/summary.md
+        cat > .evidoc/reports/autocommit-failed-warning.md <<EOF
+
+        ## Auto-commit did not update the PR branch
+
+        Evidoc applied $applied_count safe fix candidate(s) in the temporary Actions workspace, but no auto-fix commit was pushed to the pull request branch.
+
+        The report below reflects the PR as submitted.
+
+        - Check this workflow run's \`Commit safe fixes\` logs.
+        - Ensure the workflow grants \`contents: write\` when \`auto-commit: "true"\` is enabled.
+        - Run \`npx evidoc fix --safe --write --json --root <target-repository-root>\` locally, then commit and push the documentation updates.
+        EOF
+        tmp_summary="$(mktemp)"
+        {
+          head -n 1 .evidoc/reports/summary.md
+          cat .evidoc/reports/autocommit-failed-warning.md
+          tail -n +2 .evidoc/reports/summary.md
+        } > "$tmp_summary"
+        mv "$tmp_summary" .evidoc/reports/summary.md
+    - name: Publish Evidoc outputs
+      id: publish
+      if: ${{ always() }}
+      shell: bash
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        node - <<'NODE' >> "$GITHUB_OUTPUT"
+        const fs = require('node:fs');
+        let summary = {};
+        try {
+          const report = JSON.parse(fs.readFileSync('.evidoc/reports/result.json', 'utf8'));
+          summary = report.summary || {};
+        } catch {
+          summary = {};
+        }
+        console.log(`health-score=${summary.healthScore ?? 0}`);
+        console.log(`findings=${summary.findings ?? 0}`);
+        console.log(`broken=${summary.broken ?? 0}`);
+        console.log(`review-needed=${summary.reviewNeeded ?? 0}`);
+        NODE
+    - name: Create auto-fix head check
+      if: ${{ always() && inputs.auto-fix == 'true' && inputs.auto-commit == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: actions/github-script@v7
+      env:
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+      with:
+        script: |
+          const fs = require('node:fs');
+          const sha = process.env.EVIDOC_AUTOFIX_SHA;
+          if (!sha) {
+            return;
+          }
+          let report = {};
+          try {
+            report = JSON.parse(fs.readFileSync('.evidoc/reports/result.json', 'utf8'));
+          } catch {
+            report = {};
+          }
+          const summary = report.summary || {};
+          const failOn = process.env.INPUT_FAIL_ON || 'broken';
+          const fails =
+            failOn === 'review_needed'
+              ? (summary.findings ?? 0) > 0
+              : failOn === 'broken'
+                ? (summary.broken ?? 0) > 0
+                : false;
+          const body = fs.existsSync('.evidoc/reports/summary.md')
+            ? fs.readFileSync('.evidoc/reports/summary.md', 'utf8').slice(0, 65000)
+            : 'Evidoc auto-fix validation completed.';
+          try {
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'evidoc',
+              head_sha: sha,
+              status: 'completed',
+              conclusion: fails ? 'failure' : 'success',
+              output: {
+                title: fails ? 'Evidoc found drift after safe auto-fix' : 'Evidoc passed after safe auto-fix',
+                summary: body
+              }
+            });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            core.warning(`Unable to create Evidoc auto-fix check for ${sha}: ${message}. Grant checks: write when auto-commit is enabled.`);
+          }
+    - name: Upload SARIF
+      if: ${{ always() && inputs.sarif == 'true' && hashFiles('.evidoc/reports/evidoc.sarif') != '' }}
+      continue-on-error: true
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: .evidoc/reports/evidoc.sarif
+        wait-for-processing: false
+    - name: Comment on pull request
+      if: ${{ always() && inputs.pr-comment == 'true' && github.event_name == 'pull_request' }}
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('node:fs');
+          const marker = '<!-- evidoc-pr-comment -->';
+          const body = fs.existsSync('.evidoc/reports/summary.md')
+            ? fs.readFileSync('.evidoc/reports/summary.md', 'utf8')
+            : [
+                '# Evidoc Report',
+                '',
+                'Evidoc failed before a summary report was produced.',
+                '',
+                '## What to do next',
+                '',
+                "- Check this workflow run's logs for the failing setup or runtime step.",
+                '- Re-run locally after the npm package is available: `npx evidoc check --fail-on=review_needed --json`',
+                '- Before npm publication, run from an Evidoc source checkout with `npm run evidoc -- check --fail-on=review_needed --json --root <target-repository-root>`.',
+                ''
+              ].join('\n');
+          const next = `${marker}\n${body}`;
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number
+          });
+          const existing = comments.data.find((comment) => comment.body && comment.body.includes(marker));
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body: next
+            });
+            return;
+          }
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: next
+          });

@@ -1,0 +1,18 @@
+{
+  "docRoots": [
+    "README.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "docs"
+  ],
+  "ignorePatterns": [
+    "docs/archive/**"
+  ],
+  "severityOverrides": {},
+  "apiSpecPaths": [
+    "openapi.json"
+  ],
+  "reviewTtlDays": 90,
+  "requireTestsForSources": false,
+  "maxFileBytes": 500000
+}

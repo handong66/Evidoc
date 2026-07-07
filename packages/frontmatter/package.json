@@ -1,0 +1,24 @@
+{
+  "name": "@handong66/evidoc-frontmatter",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "prepublishOnly": "node ../../scripts/ensure-built-package.mjs"
+  },
+  "exports": {
+    ".": "./dist/src/index.js"
+  },
+  "types": "./dist/src/index.d.ts",
+  "files": [
+    "dist/src"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/handong66/Evidoc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/handong66/Evidoc/issues"
+  },
+  "homepage": "https://github.com/handong66/Evidoc#readme"
+}
