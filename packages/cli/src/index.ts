@@ -843,9 +843,9 @@ function formatInitResult(result: InitResult, root: string): string {
     "Next:",
     result.localGit
       ? "  git config core.hooksPath .githooks"
-      : `  npx evidoc check --root ${quoteShellArg(root)} --fail-on=review_needed`,
+      : `  npx repo-evidoc check --root ${quoteShellArg(root)} --fail-on=review_needed`,
     result.localGit
-      ? "  npx evidoc guard --event pre-commit --root " + quoteShellArg(root)
+      ? "  npx repo-evidoc guard --event pre-commit --root " + quoteShellArg(root)
       : "",
     "Source checkout fallback:",
     result.localGit
@@ -898,8 +898,8 @@ function formatDoctorResult(result: OnboardingInspection, root: string): string 
     lines.push(
       "",
       "Fix:",
-      `  npx evidoc init --yes --root ${quoteShellArg(root)}`,
-      `  npx evidoc init --yes --local-git --install-hooks --root ${quoteShellArg(root)}`,
+      `  npx repo-evidoc init --yes --root ${quoteShellArg(root)}`,
+      `  npx repo-evidoc init --yes --local-git --install-hooks --root ${quoteShellArg(root)}`,
       "Source checkout fallback:",
       `  npm run evidoc -- init --yes --root ${quoteShellArg(root)}`
     );
@@ -907,7 +907,7 @@ function formatDoctorResult(result: OnboardingInspection, root: string): string 
     lines.push(
       "",
       "Next:",
-      `  npx evidoc check --root ${quoteShellArg(root)} --fail-on=review_needed`,
+      `  npx repo-evidoc check --root ${quoteShellArg(root)} --fail-on=review_needed`,
       "Source checkout fallback:",
       `  npm run evidoc -- check --root ${quoteShellArg(root)} --fail-on=review_needed`
     );
@@ -1624,7 +1624,7 @@ function createCiRecipes(target: string): { recipes: CiRecipe[] } {
         "  script:",
         "    - npm ci",
         "    - export EVIDOC_BASE_BRANCH=\"${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-main}\"",
-        "    - npx evidoc guard --event pre-push --since merge-base:$EVIDOC_BASE_BRANCH --fail-on=review_needed",
+        "    - npx repo-evidoc guard --event pre-push --since merge-base:$EVIDOC_BASE_BRANCH --fail-on=review_needed",
         ""
       ].join("\n")
     },
@@ -1635,7 +1635,7 @@ function createCiRecipes(target: string): { recipes: CiRecipe[] } {
       content: [
         "stage('Evidoc') {",
         "  sh 'npm ci'",
-        "  sh 'EVIDOC_BASE_BRANCH=${CHANGE_TARGET:-main} npx evidoc guard --event pre-push --since merge-base:$EVIDOC_BASE_BRANCH --fail-on=review_needed'",
+        "  sh 'EVIDOC_BASE_BRANCH=${CHANGE_TARGET:-main} npx repo-evidoc guard --event pre-push --since merge-base:$EVIDOC_BASE_BRANCH --fail-on=review_needed'",
         "}",
         ""
       ].join("\n")
@@ -1656,7 +1656,7 @@ function createCiRecipes(target: string): { recipes: CiRecipe[] } {
         "        with:",
         "          node-version: 22",
         "      - run: npm ci",
-        "      - run: npx evidoc guard --event pre-push --since merge-base:${EVIDOC_BASE_BRANCH:-main} --fail-on=review_needed",
+        "      - run: npx repo-evidoc guard --event pre-push --since merge-base:${EVIDOC_BASE_BRANCH:-main} --fail-on=review_needed",
         ""
       ].join("\n")
     },
@@ -1670,7 +1670,7 @@ function createCiRecipes(target: string): { recipes: CiRecipe[] } {
         "    command:",
         "      - npm ci",
         "      - export EVIDOC_BASE_BRANCH=\"${BUILDKITE_PULL_REQUEST_BASE_BRANCH:-main}\"",
-        "      - npx evidoc guard --event pre-push --since merge-base:$EVIDOC_BASE_BRANCH --fail-on=review_needed",
+        "      - npx repo-evidoc guard --event pre-push --since merge-base:$EVIDOC_BASE_BRANCH --fail-on=review_needed",
         ""
       ].join("\n")
     }

@@ -483,10 +483,10 @@ function createAgentScanPayload(report: DriftReport, proposals: PatchProposal[])
       blockedCandidates: proposals.filter((proposal) => proposal.classification === "blocked").length
     },
     nextCommands: {
-      diagnose: "npx evidoc diagnose --root <target-repository-root>",
-      safeFixPreview: "npx evidoc fix --safe --json --root <target-repository-root>",
-      verify: "npx evidoc check --fail-on=review_needed --root <target-repository-root>",
-      sourceCheckoutFallback: "replace `npx evidoc` with `npm run evidoc --` from an Evidoc source checkout before npm publication"
+      diagnose: "npx repo-evidoc diagnose --root <target-repository-root>",
+      safeFixPreview: "npx repo-evidoc fix --safe --json --root <target-repository-root>",
+      verify: "npx repo-evidoc check --fail-on=review_needed --root <target-repository-root>",
+      sourceCheckoutFallback: "replace `npx repo-evidoc` with `npm run evidoc --` from an Evidoc source checkout before npm publication"
     },
     privacy: {
       repositoryContentUpload: "never_by_default",
@@ -523,9 +523,9 @@ function createAgentDiagnosisPayload(report: DriftReport, proposals: PatchPropos
       };
     }),
     nextCommands: {
-      diagnose: "npx evidoc diagnose --root <target-repository-root>",
-      safeFixPreview: "npx evidoc fix --safe --json --root <target-repository-root>",
-      verify: "npx evidoc check --fail-on=review_needed --root <target-repository-root>"
+      diagnose: "npx repo-evidoc diagnose --root <target-repository-root>",
+      safeFixPreview: "npx repo-evidoc fix --safe --json --root <target-repository-root>",
+      verify: "npx repo-evidoc check --fail-on=review_needed --root <target-repository-root>"
     }
   };
 }

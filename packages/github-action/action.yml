@@ -121,7 +121,7 @@ runs:
         - Use \`since: origin/<branch>\`, or fetch the baseline ref before running Evidoc.
         - For the default branch, use \`since: $suggested_since\`.
         - This run already used a full scan fallback; temporarily set \`changed-only: "false"\` only if you want to avoid baseline setup while fixing \`since\`.
-        - After editing, re-run locally after the npm package is available: \`npx evidoc check --changed-only --since "$suggested_since" --fail-on=review_needed\`
+        - After editing, re-run locally after the npm package is available: \`npx repo-evidoc check --changed-only --since "$suggested_since" --fail-on=review_needed\`
         - Before npm publication, run from an Evidoc source checkout with \`npm run evidoc -- check --changed-only --since "$suggested_since" --fail-on=review_needed --root <target-repository-root>\`.
         EOF
         echo "EVIDOC_CHANGED_ONLY=false" >> "$GITHUB_ENV"
@@ -226,7 +226,7 @@ runs:
         Evidoc previewed $preview_count safe fix candidate(s), but this workflow cannot commit fixes back to the pull request branch unless \`auto-commit: "true"\` runs on a same-repository pull request with \`contents: write\` and \`checks: write\`.
 
         - The report below still reflects the PR as submitted.
-        - Run \`npx evidoc fix --safe --write --json --root <target-repository-root>\` locally, or enable same-repository auto-commit after reviewing the permissions.
+        - Run \`npx repo-evidoc fix --safe --write --json --root <target-repository-root>\` locally, or enable same-repository auto-commit after reviewing the permissions.
         EOF
         if [ -f .evidoc/reports/summary.md ]; then
           tmp_summary="$(mktemp)"
@@ -436,7 +436,7 @@ runs:
 
         - Check this workflow run's \`Commit safe fixes\` logs.
         - Ensure the workflow grants \`contents: write\` when \`auto-commit: "true"\` is enabled.
-        - Run \`npx evidoc fix --safe --write --json --root <target-repository-root>\` locally, then commit and push the documentation updates.
+        - Run \`npx repo-evidoc fix --safe --write --json --root <target-repository-root>\` locally, then commit and push the documentation updates.
         EOF
         tmp_summary="$(mktemp)"
         {
@@ -535,7 +535,7 @@ runs:
                 '## What to do next',
                 '',
                 "- Check this workflow run's logs for the failing setup or runtime step.",
-                '- Re-run locally after the npm package is available: `npx evidoc check --fail-on=review_needed --json`',
+                '- Re-run locally after the npm package is available: `npx repo-evidoc check --fail-on=review_needed --json`',
                 '- Before npm publication, run from an Evidoc source checkout with `npm run evidoc -- check --fail-on=review_needed --json --root <target-repository-root>`.',
                 ''
               ].join('\n');

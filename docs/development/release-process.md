@@ -18,7 +18,7 @@ Direct local npm publishing also requires a logged-in maintainer account; `npm w
 Before the first public npm release, verify that every intended package name is either still unpublished or already owned by the maintainer account:
 
 ```bash
-npm view evidoc name version --json
+npm view repo-evidoc name version --json
 npm view @handong66/evidoc-cli name version --json
 npm view @handong66/evidoc-core name version --json
 npm view @handong66/evidoc-dashboard name version --json
@@ -51,10 +51,10 @@ The `Release Artifacts` GitHub Actions workflow runs on `v*` tags and manual dis
 1. installs with `npm ci`;
 2. builds and tests all workspace packages;
 3. creates one npm tarball per package with explicit local `npm pack "./$package"` paths;
-4. runs `npm run release:smoke:npx -- .evidoc/release`, which installs the local tarballs into temporary repositories and verifies the published `npx evidoc` path across `app --once --json --no-open`, `doctor`, `init --yes`, `check --fail-on=review_needed`, `diagnose`, `fix --safe --json`, `fix --safe --write --json`, and `demo --once --json --no-open`;
+4. runs `npm run release:smoke:npx -- .evidoc/release`, which installs the local tarballs into temporary repositories and verifies the published `npx repo-evidoc` path across `app --once --json --no-open`, `doctor`, `init --yes`, `check --fail-on=review_needed`, `diagnose`, `fix --safe --json`, `fix --safe --write --json`, and `demo --once --json --no-open`;
 5. uploads tarballs as workflow artifacts;
 6. attaches tarballs to a GitHub Release when the run is tag-triggered;
-7. optionally publishes all public workspace packages: `evidoc`, `@handong66/evidoc-cli`, `@handong66/evidoc-core`, `@handong66/evidoc-dashboard`, `@handong66/evidoc-frontmatter`, `@handong66/evidoc-github-action`, `@handong66/evidoc-graph`, `@handong66/evidoc-local-app`, `@handong66/evidoc-mcp-server`, `@handong66/evidoc-patcher`, `@handong66/evidoc-reports`, and `@handong66/evidoc-review-log`.
+7. optionally publishes all public workspace packages: `repo-evidoc`, `@handong66/evidoc-cli`, `@handong66/evidoc-core`, `@handong66/evidoc-dashboard`, `@handong66/evidoc-frontmatter`, `@handong66/evidoc-github-action`, `@handong66/evidoc-graph`, `@handong66/evidoc-local-app`, `@handong66/evidoc-mcp-server`, `@handong66/evidoc-patcher`, `@handong66/evidoc-reports`, and `@handong66/evidoc-review-log`.
 
 ## Versioning
 

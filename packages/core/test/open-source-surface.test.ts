@@ -22,19 +22,19 @@ test("declares an open-source license, changelog, and privacy policy", async () 
   assert.match(privacy, /must not include repository content/);
 });
 
-test("declares publishable packages including npx evidoc", async () => {
+test("declares publishable packages including npx repo-evidoc", async () => {
   const rootPackage = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
   const npxPackage = JSON.parse(await readFile(join(root, "packages", "evidoc", "package.json"), "utf8"));
   const cliPackage = JSON.parse(await readFile(join(root, "packages", "cli", "package.json"), "utf8"));
 
   assert.notEqual(rootPackage.private, true);
-  assert.equal(npxPackage.name, "evidoc");
+  assert.equal(npxPackage.name, "repo-evidoc");
   assert.equal(npxPackage.bin.evidoc, "dist/src/index.js");
   assert.equal(cliPackage.bin, undefined);
   assert.ok(rootPackage.scripts["release:notes"]);
 });
 
-test("release pipeline smoke-tests the npx evidoc package before publishing", async () => {
+test("release pipeline smoke-tests the npx repo-evidoc package before publishing", async () => {
   const rootPackage = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
   const workflow = await readFile(join(root, ".github", "workflows", "release.yml"), "utf8");
   const smokeScript = await readFile(join(root, "scripts", "smoke-npx.mjs"), "utf8");
@@ -44,7 +44,10 @@ test("release pipeline smoke-tests the npx evidoc package before publishing", as
   assert.match(workflow, /npm run release:smoke:npx/);
   assert.match(workflow, /npm pack "\.\/\$package" --pack-destination \.evidoc\/release/);
   assert.doesNotMatch(workflow, /npm pack "\$package"/);
-  assert.match(workflow, /npm publish \.\/packages\/core --access public --provenance/);
+  assert.match(workflow, /npm view "\$\{name\}@\$\{version\}" version/);
+  assert.match(workflow, /npm publish "\.\/\$\{package_dir\}" --access public --provenance/);
+  assert.match(workflow, /publish_package packages\/core/);
+  assert.match(workflow, /publish_package packages\/evidoc/);
   assert.doesNotMatch(workflow, /npm publish packages\//);
   assert.match(smokeScript, /"npm"/);
   assert.match(smokeScript, /"install"/);
@@ -52,7 +55,7 @@ test("release pipeline smoke-tests the npx evidoc package before publishing", as
   assert.match(smokeScript, /rm\(releaseDir/);
   assert.match(smokeScript, /"npx"/);
   assert.match(smokeScript, /"--no-install"/);
-  assert.match(smokeScript, /evidoc-\[0-9\]/);
+  assert.match(smokeScript, /repo-evidoc-\[0-9\]/);
   assert.match(smokeScript, /evidoc/);
   assert.match(smokeScript, /"app"/);
   assert.match(smokeScript, /"--once"/);

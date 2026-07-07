@@ -58,10 +58,10 @@ Register a custom MCP server with command `npx`, arguments `-p`, `@handong66/evi
 Run Evidoc through the CLI when OpenCode needs deterministic evidence:
 
 ```bash
-npx evidoc check --json
-npx evidoc agent-eval --json
-npx evidoc graph --json
-npx evidoc draft --json
+npx repo-evidoc check --json
+npx repo-evidoc agent-eval --json
+npx repo-evidoc graph --json
+npx repo-evidoc draft --json
 ```
 
 Use the MCP server when the OpenCode environment supports MCP tool registration. Codex remains responsible for verifying any OpenCode recommendation against repository files and test output.

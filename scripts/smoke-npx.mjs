@@ -22,7 +22,7 @@ const tarballs = (await readdir(releaseDir))
 
 const hasEvidocPackage = tarballs.some((tarball) => isWrapperTarball(basename(tarball)));
 if (!hasEvidocPackage) {
-  throw new Error(`No evidoc package tarball found in ${releaseDir}.`);
+  throw new Error(`No repo-evidoc package tarball found in ${releaseDir}.`);
 }
 
 const fixture = await mkdtemp(join(tmpdir(), "evidoc-npx-smoke-"));
@@ -79,7 +79,7 @@ try {
 
   const result = await run(
     "npx",
-    ["--no-install", "evidoc", "app", "--once", "--json", "--no-open"],
+    ["--no-install", "repo-evidoc", "app", "--once", "--json", "--no-open"],
     { cwd: fixture }
   );
   if (result.exitCode !== 0) {
@@ -173,7 +173,7 @@ try {
     throw new Error(`Expected demo smoke to include sample findings.\n${demo.stdout}`);
   }
 
-  process.stdout.write(`npx evidoc smoke passed using ${tarballs.length} package tarball(s) across app, doctor, init, check, diagnose, fix, and demo.\n`);
+  process.stdout.write(`npx repo-evidoc smoke passed using ${tarballs.length} package tarball(s) across app, doctor, init, check, diagnose, fix, and demo.\n`);
 } finally {
   await rm(fixture, { recursive: true, force: true });
 }
@@ -206,11 +206,11 @@ function packageOrder(left, right) {
 }
 
 function isWrapperTarball(name) {
-  return /^evidoc-[0-9]/.test(name);
+  return /^repo-evidoc-[0-9]/.test(name);
 }
 
 function runEvidoc(cwd, args) {
-  return run("npx", ["--no-install", "evidoc", ...args], { cwd });
+  return run("npx", ["--no-install", "repo-evidoc", ...args], { cwd });
 }
 
 function assertExit(result, expected, label) {

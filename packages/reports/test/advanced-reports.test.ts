@@ -153,20 +153,20 @@ test("formats bounded PR comments with truncation notice", () => {
 
 test("formats PR comments with actionable repair guidance", () => {
   const comment = formatPrComment(report);
-  const npmNoticeIndex = comment.indexOf("Local `npx evidoc` commands require the npm package");
+  const npmNoticeIndex = comment.indexOf("Local `npx repo-evidoc` commands require the npm package");
   const firstCommandIndex = comment.indexOf("1. Preview deterministic safe fixes");
 
   assert.match(comment, /## What to do next/);
   assert.ok(npmNoticeIndex >= 0 && npmNoticeIndex < firstCommandIndex);
   assert.match(comment, /Safe auto-fix candidates: 2/);
   assert.match(comment, /Needs human or agent review: 1/);
-  assert.match(comment, /npx evidoc fix --safe --json/);
-  assert.match(comment, /npx evidoc fix --safe --write --json/);
-  assert.match(comment, /npx evidoc diagnose/);
-  assert.match(comment, /npx evidoc fix --safe --json --root <target-repository-root>/);
-  assert.match(comment, /npx evidoc fix --safe --write --json --root <target-repository-root>/);
-  assert.match(comment, /npx evidoc diagnose --root <target-repository-root>/);
-  assert.match(comment, /npx evidoc check --fail-on=review_needed --root <target-repository-root>/);
+  assert.match(comment, /npx repo-evidoc fix --safe --json/);
+  assert.match(comment, /npx repo-evidoc fix --safe --write --json/);
+  assert.match(comment, /npx repo-evidoc diagnose/);
+  assert.match(comment, /npx repo-evidoc fix --safe --json --root <target-repository-root>/);
+  assert.match(comment, /npx repo-evidoc fix --safe --write --json --root <target-repository-root>/);
+  assert.match(comment, /npx repo-evidoc diagnose --root <target-repository-root>/);
+  assert.match(comment, /npx repo-evidoc check --fail-on=review_needed --root <target-repository-root>/);
   assert.match(comment, /npm run evidoc -- fix --safe --json --root <target-repository-root>/);
   assert.match(comment, /npm run evidoc -- fix --safe --write --json --root <target-repository-root>/);
   assert.match(comment, /Push your changes and the Evidoc workflow will re-run automatically/);
@@ -316,10 +316,10 @@ test("formats PR comments with a copy-paste agent repair prompt", () => {
   assert.match(comment, /actual: npm/);
   assert.match(comment, /```text[\s\S]*Safe auto-fix candidates:[\s\S]*README\.md:2 - command\.package-manager-mismatch/);
   assert.match(comment, /```text[\s\S]*AGENTS\.md:1 - agent_instruction\.package-manager-mismatch/);
-  assert.match(comment, /```text[\s\S]*npx evidoc fix --safe --json --root <target-repository-root>/);
-  assert.match(comment, /```text[\s\S]*npx evidoc fix --safe --write --json --root <target-repository-root>/);
-  assert.match(comment, /```text[\s\S]*npx evidoc diagnose --root <target-repository-root>/);
-  assert.match(comment, /```text[\s\S]*npx evidoc check --fail-on=review_needed --root <target-repository-root>/);
+  assert.match(comment, /```text[\s\S]*npx repo-evidoc fix --safe --json --root <target-repository-root>/);
+  assert.match(comment, /```text[\s\S]*npx repo-evidoc fix --safe --write --json --root <target-repository-root>/);
+  assert.match(comment, /```text[\s\S]*npx repo-evidoc diagnose --root <target-repository-root>/);
+  assert.match(comment, /```text[\s\S]*npx repo-evidoc check --fail-on=review_needed --root <target-repository-root>/);
   assert.match(comment, /```text[\s\S]*npm run evidoc -- check --fail-on=review_needed --root <target-repository-root>/);
   assert.match(comment, /README\.md:1 - path\.missing-reference/);
   assert.match(comment, /<target-repository-root>\/src\/missing\.ts/);
@@ -587,7 +587,7 @@ test("formats truncated PR comments without leaving an open agent prompt fence",
 test("formats PR comments with an npm-unpublished fallback path", () => {
   const comment = formatPrComment(report);
 
-  assert.match(comment, /Local `npx evidoc` commands require the npm package to be published/);
+  assert.match(comment, /Local `npx repo-evidoc` commands require the npm package to be published/);
   assert.match(comment, /If npm returns 404/);
   assert.match(comment, /use this PR comment as the repair evidence/);
   assert.match(comment, /source-checkout fallback shown under each command/);
