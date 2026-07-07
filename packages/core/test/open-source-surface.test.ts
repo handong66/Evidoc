@@ -32,6 +32,7 @@ test("declares an open-source license, changelog, and privacy policy", async () 
   assert.doesNotMatch(changelog, /npx evidoc/);
   assert.match(readme, /\[Privacy\]\(PRIVACY\.md\)/);
   assert.match(readme, /\[Security policy\]\(SECURITY\.md\)/);
+  assert.match(readme, /\[!\[中文文档\]\(https:\/\/img\.shields\.io\/badge\/docs-%E4%B8%AD%E6%96%87-blue\?style=flat-square\)\]\(docs\/vision\/pursuit-goal\.zh-CN\.md\)/);
   assert.match(privacy, /Telemetry is disabled by default/);
   assert.match(privacy, /must not include repository content/);
   assert.match(security, /## Supported Versions/);

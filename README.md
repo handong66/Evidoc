@@ -7,6 +7,7 @@
 [![Node.js Version](https://img.shields.io/node/v/repo-evidoc?style=flat-square)](https://nodejs.org)
 [![CI](https://github.com/handong66/Evidoc/actions/workflows/ci.yml/badge.svg)](https://github.com/handong66/Evidoc/actions/workflows/ci.yml)
 [![License](https://img.shields.io/npm/l/repo-evidoc?style=flat-square)](./LICENSE)
+[![中文文档](https://img.shields.io/badge/docs-%E4%B8%AD%E6%96%87-blue?style=flat-square)](docs/vision/pursuit-goal.zh-CN.md)
 
 Evidoc is an open-source-first, repo-local documentation drift control plane for agent-first development.
 It treats README, AGENTS.md, CLAUDE.md, architecture notes, API docs, examples, and source-bound documentation as engineering control surfaces.
