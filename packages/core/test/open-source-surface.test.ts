@@ -240,12 +240,18 @@ test("public docs explain real user stories before promotion", async () => {
   assert.match(stories, /npx repo-evidoc verify --instructions --json/);
   assert.match(stories, /npx repo-evidoc diagnose/);
   assert.match(stories, /npx repo-evidoc doctor/);
-  assert.match(pursuitGoal, /## 真实用户故事/);
-  assert.match(pursuitGoal, /维护者担心 README/);
+  assert.match(markdownSection(readme, "Documents"), /Chinese user stories and command choices/);
+  assert.match(pursuitGoal, /^# Evidoc 用户故事/m);
+  assert.doesNotMatch(pursuitGoal, /^# Evidoc 追求目标/m);
+  assert.match(pursuitGoal, /## 我是谁，应该用哪个命令？/);
+  assert.match(pursuitGoal, /README 里的命令、路径、API 或示例可能已经过期/);
+  assert.match(pursuitGoal, /## Evidoc 会不会改我的仓库？/);
   assert.match(pursuitGoal, /Codex/);
   assert.match(pursuitGoal, /Claude Code/);
   assert.match(pursuitGoal, /OpenCode/);
   assert.match(pursuitGoal, /npx repo-evidoc check --fail-on=review_needed/);
+  assert.match(pursuitGoal, /npx repo-evidoc verify --instructions --json/);
+  assert.match(pursuitGoal, /npx repo-evidoc recipes --target all/);
 });
 
 test("public action docs keep security-events permission opt-in for SARIF", async () => {

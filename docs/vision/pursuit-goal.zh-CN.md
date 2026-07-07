@@ -1,6 +1,10 @@
-# Evidoc 追求目标
+# Evidoc 用户故事
 
-如果你只是第一次使用 Evidoc，先看仓库根目录的 `README.md`，然后运行：
+如果你不知道 Evidoc 能帮你做什么，先看这一页。
+
+Evidoc 用来检查仓库里的 README、文档、AGENTS.md、CLAUDE.md、CI 示例、API 说明和代码是否已经不一致。它不是帮你多写文档，而是在合并、发布或交给 AI agent 之前，告诉你哪些仓库知识已经不可信。
+
+## 先用这三个命令
 
 ```bash
 npx repo-evidoc demo
@@ -8,29 +12,43 @@ npx repo-evidoc check --fail-on=review_needed
 npx repo-evidoc app
 ```
 
-这篇文档解释“为什么 Evidoc 值得做”和“完整产品边界是什么”，不是安装手册。
+这三个命令分别对应：看一个示例、扫描当前仓库、打开本地 Web UI。
 
-Evidoc 追求的不是“帮项目多写一点文档”，而是让仓库里的知识成为可验证、可审计、可被 agent 安全消费的工程资产。
+## 我是谁，应该用哪个命令？
 
-第一性原理判断如下：
+| 你是谁 | 你遇到的问题 | Evidoc 帮你看到什么 | 先运行 |
+|--------|--------------|---------------------|--------|
+| 维护者 | README 里的命令、路径、API 或示例可能已经过期。 | 哪些文档需要人工复核，哪些检查结果会挡住合并。 | `npx repo-evidoc check --fail-on=review_needed` |
+| 使用 AI 编程的团队 | AGENTS.md、CLAUDE.md、Cursor rules 或 Copilot instructions 可能误导 agent。 | agent 指令是否和当前包管理器、路径、脚本、代码结构一致。 | `npx repo-evidoc verify --instructions --json` |
+| 私有、本地-only 或 air-gapped 仓库用户 | 不想把源码上传到第三方服务，也不一定能用 GitHub Actions。 | 本地扫描结果、本地 Git gate 结果，以及 `.evidoc/reports/` 里的审计记录。 | `npx repo-evidoc init --yes --local-git --install-hooks` |
+| GitHub PR reviewer | 希望 PR 评论直接指出本次改动影响了哪些文档。 | PR 评论、CI 检查状态、需要复核的文档片段和修复入口。 | `npx repo-evidoc init --yes` |
+| Codex、Claude Code、OpenCode 用户 | 想让 agent 基于当前证据修文档，而不是凭旧 README 记忆猜。 | 带证据的修复提示、当前扫描指纹和具体不一致证据。 | `npx repo-evidoc diagnose` |
+| 平台和工具链维护者 | 想把文档漂移结果接入内部 dashboard、CI、MCP 或 agent。 | JSON report、MCP tools、graph data、runtime fingerprint 和通用 CI recipes。 | `npx repo-evidoc recipes --target all` |
+| 开源维护者 | 希望贡献者先做低门槛检查，再请求 review。 | 环境诊断、常见配置问题和最小扫描路径。 | `npx repo-evidoc doctor` |
 
-1. Coding agent 的输入会决定它的输出。
-2. 仓库文档、AGENTS.md、CLAUDE.md、README、API 示例和架构说明已经是 agent 的事实源。
-3. 如果事实源漂移，agent 不会显式报错，而是会基于旧事实生成看似合理的错误变更。
-4. 因此文档漂移不是内容品控问题，而是上下文污染问题。
-5. 上下文污染必须进入工程控制流，像测试、类型检查和 lint 一样被检测、解释、审查和阻断。
+## Evidoc 会不会改我的仓库？
 
-## 真实用户故事
+- `check`、`doctor`、`diagnose`、`verify` 默认只读。
+- `app` 可能在缺少配置时创建 `.evidoc/config.json` 和 `.evidoc/.gitignore`。
+- `init`、`init --local-git --install-hooks`、`fix --safe --write` 是显式写入命令。
+- 普通扫描默认不会调用外部 agent provider，也不会上传仓库内容。
 
-- 维护者担心 README、命令、路径、API 和示例已经过期，希望在合并前用 `npx repo-evidoc check --fail-on=review_needed` 找到需要复核的漂移。
-- 使用 AI 编程的团队维护 AGENTS.md、CLAUDE.md、Cursor rules 或 Copilot instructions，希望 agent 不会读到旧路径、旧包管理器或互相矛盾的指令。
-- 私有、本地-only 或 air-gapped 仓库不能把源码上传到第三方服务，希望用 Local Git Gate 和 `.evidoc/reports/` 在本地完成扫描、阻断和审计。
-- GitHub PR reviewer 希望 PR 评论直接说明哪些 changed docs 或 affected docs 需要处理，并给出人类和 agent 都能执行的修复命令。
-- Codex、Claude Code、OpenCode 或内网 agent 需要当前证据、runtime fingerprint 和 patch classification，而不是根据旧 README 记忆猜测怎么修。
-- 平台和工具链维护者希望把 JSON report、MCP tools、graph data、runtime fingerprint 和通用 CI recipes 接入内部 dashboard、agent 或 CI。
-- 开源维护者希望贡献者不用理解完整规则系统，也能先跑 `npx repo-evidoc doctor` 或 `npx repo-evidoc check --fail-on=review_needed` 再请求 review。
+## Evidoc 不是什么
 
-## 目标状态
+- 不是默认自动修复、自动提交或自动合并的工具。
+- 不是默认把私有代码交给 LLM 的工具。
+- 不是只服务 GitHub 的工具；本地仓库可以用 Local Git Gate，其他 CI 可以用 recipes。
+- 不是把 LLM 判断包装成确定性事实的工具；finding 必须有仓库证据。
+
+如果你只是想判断自己该不该用 Evidoc，读到这里就够了。下面是给维护者、集成者和贡献者看的产品边界。
+
+## 为什么需要 Evidoc
+
+AI 编程工具的输入会决定它的输出。仓库文档、AGENTS.md、CLAUDE.md、README、API 示例和架构说明已经是 agent 的事实源。
+
+如果事实源漂移，agent 不会显式报错，而是会基于旧事实生成看似合理的错误变更。因此文档漂移不是内容品控问题，而是上下文污染问题。上下文污染需要进入工程控制流，像测试、类型检查和 lint 一样被检测、解释、审查和阻断。
+
+## 产品边界和目标状态
 
 Evidoc 的完整目标状态是一个 repo-local、open-source-first 的文档漂移控制平面：
 

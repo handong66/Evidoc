@@ -127,7 +127,7 @@ Evidoc does not call external agent providers during normal scans and does not u
 |-------------------|----------|
 | You want a guided install path after this README. | [Onboarding](docs/onboarding.md) |
 | You need to change `.evidoc/config.json`. | [Configuration](docs/configuration.md) |
-| You want the Chinese mission and user stories. | [中文文档](docs/vision/pursuit-goal.zh-CN.md) |
+| You want Chinese user stories and command choices. | [中文文档](docs/vision/pursuit-goal.zh-CN.md) |
 | You are integrating MCP clients. | [MCP clients](docs/development/mcp-clients.md) |
 | You are reviewing architecture or extending Evidoc. | [Full-scope architecture](docs/architecture/full-scope-architecture.md) |
 | You are contributing. | [Contributing](CONTRIBUTING.md) |
