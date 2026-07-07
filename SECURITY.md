@@ -2,9 +2,28 @@
 
 Evidoc scans repository content and can expose evidence to local tools. The default design keeps scans local and avoids automatic source upload.
 
+## Supported Versions
+
+Security fixes are provided for the latest published minor line.
+
+| Version | Supported |
+|---------|-----------|
+| 0.1.x | Yes |
+| Earlier pre-release or unpublished builds | No |
+
 ## Reporting
 
-For now, report security issues privately through GitHub private vulnerability reporting if it is enabled on the repository, or open a minimal issue that asks for a private disclosure channel without posting exploit details.
+Report security issues privately through GitHub private vulnerability reporting on this repository.
+If that private channel is unavailable, open a minimal public issue asking for a private disclosure channel and do not include exploit details, private repository content, tokens, logs, or proof-of-concept payloads.
+
+We aim to acknowledge valid security reports within 5 business days.
+After acknowledgment, we will coordinate reproduction, fix scope, release timing, and advisory text with the reporter when practical.
+
+## Disclosure
+
+Please use coordinated disclosure.
+Do not publicly post exploit details before a fix, mitigation, or advisory is available.
+We may close reports that depend on social engineering, denial-of-service volume, compromised third-party accounts, or access to repositories the reporter is not authorized to access.
 
 ## Security Boundaries
 

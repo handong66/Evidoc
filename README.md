@@ -17,6 +17,23 @@ Evidoc gives you one surface for three kinds of drift control:
 - **Gate changes in Local Git or GitHub Actions** with deterministic evidence before LLM or semantic judgment.
 - **Give AI agents repair evidence** through PR comments, `diagnose`, MCP tools, runtime fingerprints, and safe deterministic fixes.
 
+## Who Is Evidoc For
+
+Evidoc is for repositories where documentation and agent instructions affect real engineering decisions.
+It helps maintainers, reviewers, and AI coding agents decide whether repository knowledge still reflects current code before they merge, publish, or repair changes.
+
+## Common User Stories
+
+| User story | What Evidoc does | Start with |
+|------------|------------------|------------|
+| Maintainers need README commands, paths, APIs, and examples to stay current before merge. | Scans documentation against repository evidence and fails on review-needed drift. | `npx repo-evidoc check --fail-on=review_needed` |
+| Teams using AGENTS.md, CLAUDE.md, Cursor rules, or Copilot instructions need agent guidance to match the codebase. | Checks agent instruction surfaces and reports stale paths, package-manager claims, and contradictory rules. | `npx repo-evidoc verify --instructions --json` |
+| Private, local-only, or air-gapped repositories need drift gates without uploading source. | Installs repo-local Git hooks and writes ignored local reports under `.evidoc/reports/`. | `npx repo-evidoc init --yes --local-git --install-hooks` |
+| GitHub PR reviewers need a scoped comment explaining which changed docs or affected docs need attention. | Runs changed-only PR scans, labels the scope, and posts repair commands plus agent prompts. | `npx repo-evidoc init --yes` |
+| Codex, Claude Code, OpenCode, or another agent needs safe repair context instead of stale README memory. | Emits evidence-bound repair prompts, patch classifications, runtime fingerprints, and safe deterministic fixes. | `npx repo-evidoc diagnose` |
+| Platform and tooling teams need to connect drift evidence to internal agents, dashboards, or CI. | Exposes JSON reports, MCP tools, graph data, runtime fingerprints, and generic CI recipes. | `npx repo-evidoc recipes --target all` |
+| Open-source maintainers need a low-friction contributor check before asking for review. | Gives contributors one npm command, a local Command Center, and clear setup diagnostics. | `npx repo-evidoc doctor` |
+
 ## Quick Start
 
 Evidoc is published on npm as `repo-evidoc` and exposes the `evidoc` command. It requires Node.js 22 or later; check with `node --version` if `npx` fails before Evidoc starts.
@@ -452,7 +469,7 @@ When enabling SARIF in this workflow, also add `security-events: write` to the w
 
 ## Documents
 
-- [Pursuit goal](docs/vision/pursuit-goal.zh-CN.md)
+- [Pursuit goal and user stories](docs/vision/pursuit-goal.zh-CN.md)
 - [Full-scope architecture](docs/architecture/full-scope-architecture.md)
 - [Onboarding](docs/onboarding.md)
 - [Configuration](docs/configuration.md)

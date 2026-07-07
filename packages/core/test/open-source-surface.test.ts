@@ -20,14 +20,24 @@ function markdownSection(text: string, heading: string): string {
 test("declares an open-source license, changelog, and privacy policy", async () => {
   await access(join(root, "LICENSE"));
   await access(join(root, "PRIVACY.md"));
+  await access(join(root, "SECURITY.md"));
   const changelog = await readFile(join(root, "CHANGELOG.md"), "utf8");
   const readme = await readFile(join(root, "README.md"), "utf8");
   const privacy = await readFile(join(root, "PRIVACY.md"), "utf8");
+  const security = await readFile(join(root, "SECURITY.md"), "utf8");
 
   assert.match(changelog, /0\.1\.0/);
+  assert.match(changelog, /Semantic Versioning/);
+  assert.match(changelog, /npx repo-evidoc/);
+  assert.doesNotMatch(changelog, /npx evidoc/);
   assert.match(readme, /\[Privacy\]\(PRIVACY\.md\)/);
+  assert.match(readme, /\[Security policy\]\(SECURITY\.md\)/);
   assert.match(privacy, /Telemetry is disabled by default/);
   assert.match(privacy, /must not include repository content/);
+  assert.match(security, /## Supported Versions/);
+  assert.match(security, /\| 0\.1\.x \| Yes \|/);
+  assert.match(security, /5 business days/);
+  assert.match(security, /coordinated disclosure/i);
 });
 
 test("declares publishable packages including npx repo-evidoc", async () => {
@@ -173,6 +183,7 @@ test("public docs present npx adoption as the current npm path", async () => {
   assert.match(onboarding, /npm run evidoc -- check --root \/path\/to\/repository --fail-on=review_needed/);
   assert.match(readme, /npm run evidoc -- fix --root \/path\/to\/repository --safe --write --json/);
   assert.match(onboarding, /npm run evidoc -- fix --root \/path\/to\/repository --safe --write --json/);
+  assert.doesNotMatch(readme, /npx evidoc/);
   assert.match(readme, /Node\.js 22 or later/);
   assert.match(onboarding, /Node\.js 22 or later/);
   assert.match(markdownSection(readme, "Choose an Adoption Path"), /npx repo-evidoc diagnose/);
@@ -185,6 +196,32 @@ test("public docs present npx adoption as the current npm path", async () => {
   assert.match(onboarding, /guard --event manual --scope staged/);
   assert.match(readme, /Generated workflows from `init` and the local app try to detect the repository branch from remote HEAD metadata or the current branch/);
   assert.match(onboarding, /Generated workflows from `init` and the local app try to detect the repository branch from remote HEAD metadata or the current branch/);
+});
+
+test("public docs explain real user stories before promotion", async () => {
+  const readme = await readFile(join(root, "README.md"), "utf8");
+  const pursuitGoal = await readFile(join(root, "docs", "vision", "pursuit-goal.zh-CN.md"), "utf8");
+  const stories = markdownSection(readme, "Common User Stories");
+
+  assert.match(markdownSection(readme, "Who Is Evidoc For"), /repository knowledge still reflects current code/);
+  assert.match(stories, /Maintainers need README commands, paths, APIs, and examples to stay current before merge/);
+  assert.match(stories, /Teams using AGENTS\.md, CLAUDE\.md, Cursor rules, or Copilot instructions/);
+  assert.match(stories, /Private, local-only, or air-gapped repositories/);
+  assert.match(stories, /GitHub PR reviewers/);
+  assert.match(stories, /Codex/);
+  assert.match(stories, /Claude Code/);
+  assert.match(stories, /OpenCode/);
+  assert.match(stories, /Platform and tooling teams/);
+  assert.match(stories, /Open-source maintainers/);
+  assert.match(stories, /npx repo-evidoc verify --instructions --json/);
+  assert.match(stories, /npx repo-evidoc diagnose/);
+  assert.match(stories, /npx repo-evidoc doctor/);
+  assert.match(pursuitGoal, /## 真实用户故事/);
+  assert.match(pursuitGoal, /维护者担心 README/);
+  assert.match(pursuitGoal, /Codex/);
+  assert.match(pursuitGoal, /Claude Code/);
+  assert.match(pursuitGoal, /OpenCode/);
+  assert.match(pursuitGoal, /npx repo-evidoc check --fail-on=review_needed/);
 });
 
 test("public action docs keep security-events permission opt-in for SARIF", async () => {
