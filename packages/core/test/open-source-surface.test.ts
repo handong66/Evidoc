@@ -42,10 +42,17 @@ test("release pipeline smoke-tests the npx repo-evidoc package before publishing
 
   assert.equal(rootPackage.scripts["release:smoke:npx"], "node scripts/smoke-npx.mjs");
   assert.match(workflow, /npm run release:smoke:npx/);
+  assert.match(workflow, /id-token: write/);
+  assert.match(workflow, /node-version: "24"/);
+  assert.match(workflow, /cache: npm/);
+  assert.match(workflow, /npm install -g npm@11\.18\.0/);
   assert.match(workflow, /npm pack "\.\/\$package" --pack-destination \.evidoc\/release/);
   assert.doesNotMatch(workflow, /npm pack "\$package"/);
   assert.match(workflow, /npm view "\$\{name\}@\$\{version\}" version/);
-  assert.match(workflow, /npm publish "\.\/\$\{package_dir\}" --access public --provenance/);
+  assert.match(workflow, /npm publish "\.\/\$\{package_dir\}" --access public/);
+  assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN/);
+  assert.doesNotMatch(workflow, /NPM_TOKEN/);
+  assert.doesNotMatch(workflow, /--provenance/);
   assert.match(workflow, /publish_package packages\/core/);
   assert.match(workflow, /publish_package packages\/evidoc/);
   assert.doesNotMatch(workflow, /npm publish packages\//);

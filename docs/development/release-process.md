@@ -1,6 +1,6 @@
 # Release Process
 
-Evidoc publishes npm package tarballs and can publish registry packages when maintainers provide `NPM_TOKEN` and set the manual `publish` input, or when a tag run has a configured token.
+Evidoc publishes npm package tarballs and publishes registry packages through npm Trusted Publishing. GitHub Actions receives a short-lived OIDC credential for the configured workflow instead of using a long-lived npm token.
 
 ## Preconditions
 
@@ -13,7 +13,35 @@ npm whoami
 ```
 
 When `npm run release:smoke:npx` is run locally without an explicit release directory, the script clears its default release directory and re-packs every workspace package before installing the tarballs into a temporary repository. This prevents stale package artifacts from passing as a current-source smoke test. Each package also has a `prepublishOnly` guard that refuses local publish when its package build output or bin entry is missing.
-Direct local npm publishing also requires a logged-in maintainer account; `npm whoami` fails on machines that can run dry-runs but cannot publish. GitHub Actions publishing requires the `NPM_TOKEN` secret.
+Direct local npm publishing still requires a logged-in maintainer account; `npm whoami` fails on machines that can run dry-runs but cannot publish. GitHub Actions publishing requires a trusted publisher entry on every public package with repository `handong66/Evidoc`, workflow path `.github/workflows/release.yml`, and allowed action `npm publish`.
+
+Configure or audit the trusted publisher entries with npm CLI 11.15.0 or newer:
+
+```bash
+for package in \
+  repo-evidoc \
+  @handong66/evidoc-cli \
+  @handong66/evidoc-core \
+  @handong66/evidoc-dashboard \
+  @handong66/evidoc-frontmatter \
+  @handong66/evidoc-github-action \
+  @handong66/evidoc-graph \
+  @handong66/evidoc-local-app \
+  @handong66/evidoc-mcp-server \
+  @handong66/evidoc-patcher \
+  @handong66/evidoc-reports \
+  @handong66/evidoc-review-log
+do
+  npx npm@11.18.0 trust github "$package" --repo handong66/Evidoc --file "$(basename .github/workflows/release.yml)" --allow-publish --yes
+  npx npm@11.18.0 trust list "$package"
+done
+```
+
+After trusted publishing is configured and a publish workflow has succeeded, remove any legacy GitHub npm token secret:
+
+```bash
+gh secret delete NPM_TOKEN --repo handong66/Evidoc
+```
 
 Before the first public npm release, verify that every intended package name is either still unpublished or already owned by the maintainer account:
 
@@ -74,4 +102,4 @@ git tag -f v0 v0.1.0
 git push origin -f v0
 ```
 
-Do not enable npm publishing until package ownership, package names, secret handling, and `npm publish ./packages/<name> --dry-run --access public` have been deliberately reviewed.
+Do not enable npm publishing until package ownership, package names, trusted publisher entries, and `npm publish ./packages/<name> --dry-run --access public` have been deliberately reviewed.
