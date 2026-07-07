@@ -59,7 +59,7 @@ npx repo-evidoc init --yes --local-git --install-hooks
 npx repo-evidoc guard --event pre-commit
 npx repo-evidoc guard --event pre-push --since main
 npx repo-evidoc guard --event pre-push --since merge-base:main
-npx repo-evidoc guard --scope staged
+npx repo-evidoc guard --event manual --scope staged
 ```
 
 `pre-commit` defaults to staged files so unrelated unstaged edits do not block the current commit. `pre-push` and manual runs default to the worktree and accept either a normal Git ref or `merge-base:<branch>`. `pre-commit` and `pre-push` guard events default to `--fail-on=review_needed`, so generated hooks block without requiring users to remember a flag; pass `--fail-on=none` only for an advisory local run.
@@ -149,7 +149,7 @@ SARIF upload is opt-in with `sarif: "true"` because many private repositories do
 
 ## One-command Local Setup
 
-After npm publication, this is the lowest-cognition path:
+This is the lowest-cognition path:
 
 ```bash
 npx repo-evidoc

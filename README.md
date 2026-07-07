@@ -1,22 +1,97 @@
 # Evidoc
 
-Evidoc is an open-source-first, repo-local documentation drift control plane for agent-first development.
+> **Keep repository docs and agent instructions aligned with code before humans or AI agents trust stale context.**
+> Run repo-local drift scans, local Git gates, PR comments, repair prompts, and a local command center without uploading repository content by default.
 
-It treats README, AGENTS.md, CLAUDE.md, architecture notes, API docs, examples, and source-bound documentation as engineering control surfaces. The goal is to prevent humans and coding agents from silently trusting stale repository knowledge.
+[![npm](https://img.shields.io/npm/v/repo-evidoc?style=flat-square)](https://www.npmjs.com/package/repo-evidoc)
+[![Node.js Version](https://img.shields.io/node/v/repo-evidoc?style=flat-square)](https://nodejs.org)
+[![CI](https://github.com/handong66/Evidoc/actions/workflows/ci.yml/badge.svg)](https://github.com/handong66/Evidoc/actions/workflows/ci.yml)
+[![License](https://img.shields.io/npm/l/repo-evidoc?style=flat-square)](./LICENSE)
+
+Evidoc is an open-source-first, repo-local documentation drift control plane for agent-first development.
+It treats README, AGENTS.md, CLAUDE.md, architecture notes, API docs, examples, and source-bound documentation as engineering control surfaces.
+
+Evidoc gives you one surface for three kinds of drift control:
+
+- **Run local scans and a local Web UI** to find stale README claims, agent instructions, commands, paths, schemas, source bindings, and review windows.
+- **Gate changes in Local Git or GitHub Actions** with deterministic evidence before LLM or semantic judgment.
+- **Give AI agents repair evidence** through PR comments, `diagnose`, MCP tools, runtime fingerprints, and safe deterministic fixes.
 
 ## Quick Start
 
-Evidoc is published on npm as `repo-evidoc` and exposes the `evidoc` command. Node.js 22 or later is required.
+Evidoc is published on npm as `repo-evidoc` and exposes the `evidoc` command. It requires Node.js 22 or later; check with `node --version` if `npx` fails before Evidoc starts.
 
-From any repository:
+### 1. Run a first scan
 
 ```bash
 npx repo-evidoc check --fail-on=review_needed
-npx repo-evidoc app
-npx repo-evidoc init --yes --local-git --install-hooks
 ```
 
-For source-checkout development or local verification of unreleased changes:
+### 2. Open the local Command Center
+
+```bash
+npx repo-evidoc app
+```
+
+To try Evidoc without touching a real repository:
+
+```bash
+npx repo-evidoc demo
+```
+
+### 3. Add a repo-local Git gate
+
+```bash
+npx repo-evidoc init --yes --local-git --install-hooks
+npx repo-evidoc guard --event pre-commit
+```
+
+### 4. Optional: add GitHub Actions
+
+```bash
+npx repo-evidoc init --yes
+```
+
+Both `init` forms write a conservative `.evidoc/config.json` and `.evidoc/.gitignore`.
+The plain form writes an Evidoc workflow; `--local-git` writes repo-local hooks when the repository should stay local-only.
+
+## Choose an Adoption Path
+
+| Need | Recommended path |
+|------|------------------|
+| Scan a repository once | `npx repo-evidoc check --fail-on=review_needed` |
+| Open the local Web UI | `npx repo-evidoc app` |
+| Keep a private or local-only repository guarded | `npx repo-evidoc init --yes --local-git --install-hooks` |
+| Add PR comments and CI gating on GitHub | `npx repo-evidoc init --yes` or the workflow below |
+| Hand evidence to Codex, Claude Code, or OpenCode | `npx repo-evidoc diagnose` |
+| Compare agent repair behavior | `npx repo-evidoc agent-eval --json` |
+| Generate GitLab, Jenkins, Gitea, or Buildkite snippets | `npx repo-evidoc recipes --target all` |
+
+## For Humans
+
+Use Evidoc directly when you want a concrete report before editing, reviewing, or merging:
+
+- `npx repo-evidoc doctor` checks whether the repository is configured correctly.
+- `npx repo-evidoc check --fail-on=review_needed` scans documentation and agent surfaces.
+- `npx repo-evidoc app` opens the bilingual local Command Center.
+- `npx repo-evidoc fix --safe --write --json` applies only deterministic safe fixes.
+- `npx repo-evidoc guard --event pre-push --since merge-base:main` checks a branch before pushing.
+
+## For AI Agents
+
+Evidoc is designed to be read by coding agents before they repair documentation.
+Agents should use current repository evidence, not stale README memory or untrusted finding text.
+
+- `npx repo-evidoc diagnose` emits evidence-bound repair prompts for Codex, Claude Code, OpenCode, or another agent.
+- `npx repo-evidoc verify --instructions --json` focuses on AGENTS.md, CLAUDE.md, Cursor rules, and GitHub Copilot instructions.
+- `npx repo-evidoc agent-eval --json` prints a local benchmark pack for comparing agent behavior with and without Evidoc evidence.
+- MCP clients should start with `evidoc.agent_scan`, the default read-only scan bundle with freshness, runtime fingerprints, patch classifications, and privacy metadata.
+
+Evidoc does not call external agent providers during normal scans and does not upload repository content by default.
+
+## Source Checkout Development
+
+Use a source checkout when contributing to Evidoc or verifying unreleased changes against another repository:
 
 ```bash
 git clone https://github.com/handong66/Evidoc.git
@@ -55,7 +130,7 @@ npx repo-evidoc init --yes --local-git --install-hooks
 npx repo-evidoc guard --event pre-commit
 npx repo-evidoc guard --event pre-push --since main
 npx repo-evidoc guard --event pre-push --since merge-base:main
-npx repo-evidoc guard --scope staged
+npx repo-evidoc guard --event manual --scope staged
 ```
 
 `pre-commit` defaults to staged files, so unrelated unstaged worktree edits do not block the commit being made.
@@ -149,7 +224,7 @@ SARIF upload is opt-in with `sarif: "true"` because many private repositories do
 
 ## Zero-Setup Local Adoption
 
-After npm publication, run Evidoc from any existing repository:
+Run Evidoc from any existing repository:
 
 ```bash
 npx repo-evidoc
@@ -270,43 +345,55 @@ The older read tools remain available for focused follow-up.
 
 ## Development Commands
 
-```bash
-npm install
-npm test
-npm run release:smoke:npx
-npm run evidoc -- --json
-```
+| Command | Purpose |
+|---------|---------|
+| `npm install` | Install workspace dependencies |
+| `npm test` | Build and run the full test suite |
+| `npm run release:smoke:npx` | Pack local tarballs and smoke-test `npx repo-evidoc` |
+| `npm run evidoc -- --json` | Run a source-checkout scan as JSON |
 
 ## CLI
 
-```bash
-npm run evidoc -- app --once --json --no-open
-npm run evidoc -- demo --once --json --no-open
-npm run evidoc -- serve --root . --json --once --no-open
-npm run evidoc -- check --json
-npm run evidoc -- diagnose --json
-npm run evidoc -- diff --since HEAD --json
-npm run evidoc -- guard --event pre-commit --json
-npm run evidoc -- guard --event pre-push --since merge-base:main --json
-npm run evidoc -- verify --instructions --json
-npm run evidoc -- agent-eval --json
-npm run evidoc -- recipes --target all
-npm run evidoc -- fix --safe --write --json
-npm run evidoc -- index --json
-npm run evidoc -- explain 0 --json
-npm run evidoc -- graph --json
-npm run evidoc -- dashboard --out .evidoc/reports/dashboard.html
-npm run evidoc -- draft --json
-npm run evidoc -- validate --proposal <proposal-json> --json
-npm run evidoc -- multi --root . --json
-npm run evidoc -- mcp-tools
-npm run evidoc -- action --format=github --pr-comment-file <summary-output> --annotations-file <annotations-output>
-npm run evidoc -- init --yes --no-action
-npm run evidoc -- init --yes --local-git --install-hooks
-npm run evidoc -- doctor
-```
+| Command | Purpose |
+|---------|---------|
+| `npm run evidoc -- app --once --json --no-open` | One-shot local app state |
+| `npm run evidoc -- demo --once --json --no-open` | Built-in sample repository |
+| `npm run evidoc -- serve --root . --json --once --no-open` | Multi-root app server smoke |
+| `npm run evidoc -- check --json` | Full drift scan |
+| `npm run evidoc -- diagnose --json` | Agent repair prompts |
+| `npm run evidoc -- diff --since HEAD --json` | Changed-file evidence |
+| `npm run evidoc -- guard --event pre-commit --json` | Local staged gate |
+| `npm run evidoc -- guard --event pre-push --since merge-base:main --json` | Branch-before-push gate |
+| `npm run evidoc -- verify --instructions --json` | Agent instruction check |
+| `npm run evidoc -- agent-eval --json` | Agent A/B benchmark pack |
+| `npm run evidoc -- recipes --target all` | CI recipe snippets |
+| `npm run evidoc -- fix --safe --write --json` | Deterministic safe fixes |
+| `npm run evidoc -- index --json` | Repository index |
+| `npm run evidoc -- explain 0 --json` | Finding detail |
+| `npm run evidoc -- graph --json` | Evidence graph |
+| `npm run evidoc -- dashboard --out .evidoc/reports/dashboard.html` | Static dashboard |
+| `npm run evidoc -- draft --json` | Patch proposals |
+| `npm run evidoc -- validate --proposal <proposal-json> --json` | Proposal validation |
+| `npm run evidoc -- multi --root . --json` | Multi-repository aggregate |
+| `npm run evidoc -- mcp-tools` | MCP tool list |
+| `npm run evidoc -- action --format=github --pr-comment-file <summary-output> --annotations-file <annotations-output>` | Local action smoke |
+| `npm run evidoc -- init --yes --no-action` | CLI-only config |
+| `npm run evidoc -- init --yes --local-git --install-hooks` | Local Git Gate setup |
+| `npm run evidoc -- doctor` | Readiness check |
 
 For local GitHub Action smoke tests, `--summary` / `--annotations` are the canonical output flags. `--pr-comment-file` and `--annotations-file` are accepted aliases, and `--format=github` is accepted for copied CI-like commands.
+
+## Troubleshooting
+
+| Symptom | What to try |
+|---------|-------------|
+| `npx repo-evidoc` fails before running | Check `node --version`; npm installs require Node.js 22 or later |
+| `doctor` is not ready | Run `npx repo-evidoc init --yes` or `npx repo-evidoc init --yes --local-git --install-hooks` |
+| No documents are scanned | Add `README.md`, add `docs/`, or update `.evidoc/config.json` `docRoots` |
+| Local Git hooks do not run | Check `git config core.hooksPath`; local gates expect `.githooks` |
+| GitHub Action comments are missing | Keep `pull-requests: write` and `pr-comment: "true"` in the workflow |
+| A changed-only PR scan looks too narrow | Set `since: origin/${{ github.event.repository.default_branch }}` or run a full scan |
+| An agent report feels stale | Re-run `npx repo-evidoc guard --event manual --scope staged --json` and compare runtime fingerprints |
 
 ## GitHub Action
 
@@ -338,10 +425,11 @@ jobs:
           since: origin/${{ github.event.repository.default_branch }}
 ```
 
-For release-pinned external repositories, keep the workflow trigger and permissions above, then replace only the action reference after the first public release is cut:
+For release-pinned external repositories, keep the full workflow trigger, permissions, and job above.
+Inside the `steps` list, replace only the action reference with an exact release tag:
 
 ```yaml
-- uses: handong66/Evidoc/packages/github-action@v0
+- uses: handong66/Evidoc/packages/github-action@v0.1.0
   with:
     fail-on: review_needed
     sarif: "false"

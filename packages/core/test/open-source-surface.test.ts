@@ -9,6 +9,14 @@ function yamlBlocks(text: string): string[] {
   return [...text.matchAll(/```yaml\n([\s\S]*?)\n```/g)].map((match) => match[1]);
 }
 
+function markdownSection(text: string, heading: string): string {
+  const sectionStart = new RegExp(`^## ${heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n`, "m").exec(text);
+  assert.ok(sectionStart, `missing README section: ${heading}`);
+  const start = sectionStart.index;
+  const next = /^## /m.exec(text.slice(start + sectionStart[0].length));
+  return next === null ? text.slice(start) : text.slice(start, start + sectionStart[0].length + next.index);
+}
+
 test("declares an open-source license, changelog, and privacy policy", async () => {
   await access(join(root, "LICENSE"));
   await access(join(root, "PRIVACY.md"));
@@ -144,6 +152,7 @@ test("README GitHub Action examples keep PR comments visible by default", async 
     /pull_request:\n  push:\n    # If your default branch is not main or master, replace this list\.\n    branches:\n      - main\n      - master/
   );
   assert.match(actionSection, /If your default branch is not main or master, replace this list/);
+  assert.match(actionSection, /handong66\/Evidoc\/packages\/github-action@v0\.1\.0/);
   assert.doesNotMatch(actionSection, /pull_request:\n  push:\n\npermissions:/);
 });
 
@@ -166,6 +175,14 @@ test("public docs present npx adoption as the current npm path", async () => {
   assert.match(onboarding, /npm run evidoc -- fix --root \/path\/to\/repository --safe --write --json/);
   assert.match(readme, /Node\.js 22 or later/);
   assert.match(onboarding, /Node\.js 22 or later/);
+  assert.match(markdownSection(readme, "Choose an Adoption Path"), /npx repo-evidoc diagnose/);
+  assert.match(markdownSection(readme, "For Humans"), /npx repo-evidoc doctor/);
+  assert.match(markdownSection(readme, "For Humans"), /npx repo-evidoc fix --safe --write --json/);
+  assert.match(markdownSection(readme, "For AI Agents"), /npx repo-evidoc agent-eval --json/);
+  assert.match(markdownSection(readme, "For AI Agents"), /evidoc\.agent_scan/);
+  assert.doesNotMatch(markdownSection(readme, "Local Git Gate Adoption"), /guard --scope staged/);
+  assert.match(markdownSection(readme, "Troubleshooting"), /guard --event manual --scope staged/);
+  assert.match(onboarding, /guard --event manual --scope staged/);
   assert.match(readme, /Generated workflows from `init` and the local app try to detect the repository branch from remote HEAD metadata or the current branch/);
   assert.match(onboarding, /Generated workflows from `init` and the local app try to detect the repository branch from remote HEAD metadata or the current branch/);
 });
