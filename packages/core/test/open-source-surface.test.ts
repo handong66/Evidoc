@@ -29,7 +29,7 @@ test("declares publishable packages including npx evidoc", async () => {
 
   assert.notEqual(rootPackage.private, true);
   assert.equal(npxPackage.name, "evidoc");
-  assert.equal(npxPackage.bin.evidoc, "./dist/src/index.js");
+  assert.equal(npxPackage.bin.evidoc, "dist/src/index.js");
   assert.equal(cliPackage.bin, undefined);
   assert.ok(rootPackage.scripts["release:notes"]);
 });
