@@ -1,5 +1,7 @@
 # npm Namespace Hard-Cut Implementation Plan
 
+<!-- evidoc: ignore-file -->
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Publish Evidoc `0.3.0` under the unscoped `evidoc` launcher and the `@evidoc` organization with no compatibility layer or stale repository identity.
