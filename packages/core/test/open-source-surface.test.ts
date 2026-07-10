@@ -140,8 +140,11 @@ test("release pipeline verifies versions, package identity, and registry state b
   assert.match(workflow, /npm run release:smoke:npx/);
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /npm install -g npm@11\.18\.0/);
-  assert.match(workflow, /Refusing partial release/);
   assert.match(workflow, /Unable to verify registry state/);
+  assert.match(workflow, /Published package integrity mismatch/);
+  assert.match(workflow, /Verified existing package artifact/);
+  assert.match(workflow, /dist\.integrity/);
+  assert.match(workflow, /openssl dgst -sha512 -binary/);
   assert.match(workflow, /packages\/core/);
   assert.match(workflow, /packages\/evidoc/);
   assert.match(workflow, /tarball="\.evidoc\/release\/\$\{tarball_name\}"/);
@@ -151,7 +154,7 @@ test("release pipeline verifies versions, package identity, and registry state b
     workflow.indexOf("- name: Publish packages to npm") < workflow.indexOf("- name: Attach artifacts to GitHub Release"),
     "npm publishing must succeed before the GitHub Release is created"
   );
-  assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN|NPM_TOKEN|Skipping .*already published/);
+  assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN|NPM_TOKEN/);
   assert.doesNotMatch(workflow, /github\.event\.inputs\.publish/);
   assert.match(workflow, /- name: Publish packages to npm\n\s+if: startsWith\(github\.ref, 'refs\/tags\/'\)/);
   assert.match(smoke, /package\/README\.md/);
@@ -159,9 +162,12 @@ test("release pipeline verifies versions, package identity, and registry state b
   assert.match(smoke, /EXPECTED_PACKAGE_COUNT = 12/);
   assert.match(smoke, /"npx"/);
   assert.match(smoke, /"--no-install"/);
+  assert.match(smoke, /"evidoc"/);
+  assert.match(smoke, /evidoc-mcp/);
   assert.match(smoke, /"fix"/);
   const verifier = await readFile(join(root, "scripts/verify-release-version.mjs"), "utf8");
   assert.match(verifier, /Public package directories changed/);
+  assert.match(verifier, /\["core", "@evidoc\/core"\]/);
   assert.match(verifier, /\["evidoc", "evidoc"\]/);
 
   for (const source of [workflow, action]) {

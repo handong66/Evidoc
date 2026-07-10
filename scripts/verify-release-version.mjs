@@ -5,18 +5,18 @@ import { fileURLToPath } from "node:url";
 
 const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedPackages = new Map([
-  ["cli", "@handong66/evidoc-cli"],
-  ["core", "@handong66/evidoc-core"],
-  ["dashboard", "@handong66/evidoc-dashboard"],
-  ["evidoc", "repo-evidoc"],
-  ["frontmatter", "@handong66/evidoc-frontmatter"],
-  ["github-action", "@handong66/evidoc-github-action"],
-  ["graph", "@handong66/evidoc-graph"],
-  ["local-app", "@handong66/evidoc-local-app"],
-  ["mcp-server", "@handong66/evidoc-mcp-server"],
-  ["patcher", "@handong66/evidoc-patcher"],
-  ["reports", "@handong66/evidoc-reports"],
-  ["review-log", "@handong66/evidoc-review-log"]
+  ["cli", "@evidoc/cli"],
+  ["core", "@evidoc/core"],
+  ["dashboard", "@evidoc/dashboard"],
+  ["evidoc", "evidoc"],
+  ["frontmatter", "@evidoc/frontmatter"],
+  ["github-action", "@evidoc/github-action"],
+  ["graph", "@evidoc/graph"],
+  ["local-app", "@evidoc/local-app"],
+  ["mcp-server", "@evidoc/mcp-server"],
+  ["patcher", "@evidoc/patcher"],
+  ["reports", "@evidoc/reports"],
+  ["review-log", "@evidoc/review-log"]
 ]);
 const args = parseArgs(process.argv.slice(2));
 const root = resolve(args.root ?? scriptRoot);

@@ -67,27 +67,40 @@ jobs:
             packages/evidoc
           )
 
+          publish_required=()
           for package_dir in "${package_dirs[@]}"; do
             name="$(node -e "console.log(require('./${package_dir}/package.json').name)")"
             version="$(node -e "console.log(require('./${package_dir}/package.json').version)")"
-            if registry_output="$(npm view "${name}@${version}" version --json 2>&1)"; then
-              echo "Refusing partial release: ${name}@${version} is already published." >&2
-              exit 1
-            fi
-            if ! grep -q 'E404' <<< "$registry_output"; then
-              echo "Unable to verify registry state for ${name}@${version}; refusing to publish." >&2
-              echo "$registry_output" >&2
-              exit 1
-            fi
-          done
-
-          for package_dir in "${package_dirs[@]}"; do
             tarball_name="$(node -e "const p=require('./${package_dir}/package.json'); process.stdout.write(p.name.replace(/^@/, '').replace('/', '-') + '-' + p.version + '.tgz')")"
             tarball=".evidoc/release/${tarball_name}"
             if [ ! -f "$tarball" ]; then
               echo "Verified package artifact is missing: $tarball" >&2
               exit 1
             fi
+
+            local_integrity="sha512-$(openssl dgst -sha512 -binary "$tarball" | openssl base64 -A)"
+            if registry_output="$(npm view "${name}@${version}" dist.integrity --json 2>&1)"; then
+              published_integrity="$(node -e 'const value=JSON.parse(process.argv[1]); if (typeof value !== "string") process.exit(1); process.stdout.write(value)' "$registry_output")"
+              if [ "$published_integrity" != "$local_integrity" ]; then
+                echo "Published package integrity mismatch for ${name}@${version}." >&2
+                echo "registry: $published_integrity" >&2
+                echo "local:    $local_integrity" >&2
+                exit 1
+              fi
+              echo "Verified existing package artifact: ${name}@${version}"
+              continue
+            fi
+            if ! grep -q 'E404' <<< "$registry_output"; then
+              echo "Unable to verify registry state for ${name}@${version}; refusing to publish." >&2
+              echo "$registry_output" >&2
+              exit 1
+            fi
+            publish_required+=("$package_dir")
+          done
+
+          for package_dir in "${publish_required[@]}"; do
+            tarball_name="$(node -e "const p=require('./${package_dir}/package.json'); process.stdout.write(p.name.replace(/^@/, '').replace('/', '-') + '-' + p.version + '.tgz')")"
+            tarball=".evidoc/release/${tarball_name}"
             npm publish "$tarball" --access public
           done
       - name: Attach artifacts to GitHub Release

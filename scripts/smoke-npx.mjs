@@ -30,7 +30,7 @@ if (tarballs.length !== EXPECTED_PACKAGE_COUNT) {
   throw new Error(`Expected ${EXPECTED_PACKAGE_COUNT} package tarballs, found ${tarballs.length} in ${releaseDir}.`);
 }
 if (!hasEvidocPackage) {
-  throw new Error(`No repo-evidoc package tarball found in ${releaseDir}.`);
+  throw new Error(`No evidoc package tarball found in ${releaseDir}.`);
 }
 
 const fixture = await mkdtemp(join(tmpdir(), "evidoc-npx-smoke-"));
@@ -87,7 +87,7 @@ try {
 
   const result = await run(
     "npx",
-    ["--no-install", "repo-evidoc", "app", "--once", "--json", "--no-open"],
+    ["--no-install", "evidoc", "app", "--once", "--json", "--no-open"],
     { cwd: fixture }
   );
   if (result.exitCode !== 0) {
@@ -181,7 +181,7 @@ try {
     throw new Error(`Expected demo smoke to include sample findings.\n${demo.stdout}`);
   }
 
-  process.stdout.write(`npx repo-evidoc smoke passed using ${tarballs.length} package tarball(s) across app, doctor, init, check, diagnose, fix, and demo.\n`);
+  process.stdout.write(`npx evidoc smoke passed using ${tarballs.length} package tarball(s) across app, doctor, init, check, diagnose, fix, and demo.\n`);
 } finally {
   await rm(fixture, { recursive: true, force: true });
 }
@@ -214,11 +214,11 @@ function packageOrder(left, right) {
 }
 
 function isWrapperTarball(name) {
-  return /^repo-evidoc-[0-9]/.test(name);
+  return /^evidoc-[0-9]/.test(name);
 }
 
 function runEvidoc(cwd, args) {
-  return run("npx", ["--no-install", "repo-evidoc", ...args], { cwd });
+  return run("npx", ["--no-install", "evidoc", ...args], { cwd });
 }
 
 function assertExit(result, expected, label) {
@@ -248,6 +248,18 @@ async function assertTarballMetadata(tarball) {
     if (!listing.stdout.split(/\r?\n/).includes(required)) {
       throw new Error(`${basename(tarball)} is missing ${required}.`);
     }
+  }
+
+  const manifestResult = await run("tar", ["-xOf", tarball, "package/package.json"], { cwd: repoRoot });
+  if (manifestResult.exitCode !== 0) {
+    throw new Error(`Cannot read package manifest from ${tarball}\n${manifestResult.stderr}`);
+  }
+  const manifest = JSON.parse(manifestResult.stdout);
+  if (manifest.name === "evidoc" && manifest.bin?.evidoc !== "dist/src/index.js") {
+    throw new Error(`${basename(tarball)} does not expose the evidoc executable.`);
+  }
+  if (manifest.name === "@evidoc/mcp-server" && manifest.bin?.["evidoc-mcp"] !== "dist/src/index.js") {
+    throw new Error(`${basename(tarball)} does not expose the evidoc-mcp executable.`);
   }
 }
 
