@@ -6,6 +6,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const EXPECTED_PACKAGE_COUNT = 12;
 const releaseDir = resolve(repoRoot, process.argv[2] ?? ".evidoc/release");
 const shouldPackFresh = process.argv[2] === undefined;
 
@@ -20,7 +21,14 @@ const tarballs = (await readdir(releaseDir))
   .map((entry) => join(releaseDir, entry))
   .sort(packageOrder);
 
+for (const tarball of tarballs) {
+  await assertTarballMetadata(tarball);
+}
+
 const hasEvidocPackage = tarballs.some((tarball) => isWrapperTarball(basename(tarball)));
+if (tarballs.length !== EXPECTED_PACKAGE_COUNT) {
+  throw new Error(`Expected ${EXPECTED_PACKAGE_COUNT} package tarballs, found ${tarballs.length} in ${releaseDir}.`);
+}
 if (!hasEvidocPackage) {
   throw new Error(`No repo-evidoc package tarball found in ${releaseDir}.`);
 }
@@ -228,6 +236,18 @@ function assertIncludes(value, needle, label) {
 function assertNotIncludes(value, needle, label) {
   if (value.includes(needle)) {
     throw new Error(`${label} unexpectedly included ${needle}\n${value}`);
+  }
+}
+
+async function assertTarballMetadata(tarball) {
+  const listing = await run("tar", ["-tzf", tarball], { cwd: repoRoot });
+  if (listing.exitCode !== 0) {
+    throw new Error(`Cannot inspect ${tarball}\n${listing.stderr}`);
+  }
+  for (const required of ["package/package.json", "package/README.md", "package/LICENSE"]) {
+    if (!listing.stdout.split(/\r?\n/).includes(required)) {
+      throw new Error(`${basename(tarball)} is missing ${required}.`);
+    }
   }
 }
 

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { checkRepository, createScanCacheKey } from "../src/index.js";
+import { checkRepository } from "../src/index.js";
 
 async function fixture(): Promise<string> {
   return mkdtemp(join(tmpdir(), "evidoc-perf-"));
@@ -38,20 +38,4 @@ test("empty changed-file scans do not fall back to full repository scans", async
 
   assert.equal(report.summary.documentsScanned, 0);
   assert.equal(report.summary.findings, 0);
-});
-
-test("creates a stable scan cache key from files, config, and changed-file scope", () => {
-  const first = createScanCacheKey({
-    files: ["README.md", "src/index.ts"],
-    configHash: "abc",
-    changedFiles: ["README.md"]
-  });
-  const second = createScanCacheKey({
-    files: ["src/index.ts", "README.md"],
-    configHash: "abc",
-    changedFiles: ["README.md"]
-  });
-
-  assert.equal(first, second);
-  assert.match(first, /^[a-f0-9]{64}$/);
 });

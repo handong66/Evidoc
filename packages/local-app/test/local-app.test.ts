@@ -2,12 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { createServer, type Server } from "node:http";
+import { createServer, request as httpRequest, type Server } from "node:http";
 import { chmod, mkdtemp, mkdir, readFile, realpath, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fingerprintFileContent } from "@handong66/evidoc-core";
-import { enableGithubAction, scanLocalAppRepositories, startLocalAppServer } from "../src/index.js";
+import { enableGithubAction, enableLocalGitGate, scanLocalAppRepositories, startLocalAppServer } from "../src/index.js";
 
 async function fixture(prefix = "evidoc-local-app-"): Promise<string> {
   return mkdtemp(join(tmpdir(), prefix));
@@ -21,6 +21,34 @@ async function write(root: string, file: string, text: string): Promise<void> {
 
 async function real(root: string): Promise<string> {
   return realpath(root);
+}
+
+async function rawRequest(
+  port: number,
+  path: string,
+  options: { method?: string; headers?: Record<string, string>; body?: string } = {}
+): Promise<{ status: number; body: string }> {
+  return new Promise((resolveRequest, reject) => {
+    const request = httpRequest(
+      {
+        host: "127.0.0.1",
+        port,
+        path,
+        method: options.method ?? "GET",
+        headers: options.headers
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk: Buffer) => chunks.push(chunk));
+        response.on("end", () => {
+          resolveRequest({ status: response.statusCode ?? 0, body: Buffer.concat(chunks).toString("utf8") });
+        });
+      }
+    );
+    request.once("error", reject);
+    if (options.body) request.write(options.body);
+    request.end();
+  });
 }
 
 function gitInitBranch(root: string, branch: string): void {
@@ -41,6 +69,14 @@ test("scanLocalAppRepositories auto-initializes config, scans repos, and records
   assert.equal(state.repositories.length, 1);
   assert.equal(state.repositories[0].health, "ok");
   assert.equal(state.repositories[0].ci.enabled, false);
+  const runtime = (state.repositories[0] as unknown as {
+    runtime: { schemaVersion: string; event: string; mode: string; scope: string; fingerprint: string };
+  }).runtime;
+  assert.equal(runtime.schemaVersion, "evidoc.agent-runtime.v1");
+  assert.equal(runtime.event, "local_app");
+  assert.equal(runtime.mode, "advisory");
+  assert.equal(runtime.scope, "full_repository");
+  assert.match(runtime.fingerprint, /^dgr_[a-f0-9]{16}$/);
   assert.equal(existsSync(join(root, ".evidoc", "config.json")), true);
   assert.equal(existsSync(join(root, ".evidoc", ".gitignore")), true);
   assert.equal(existsSync(join(root, ".evidoc", "history.jsonl")), true);
@@ -426,7 +462,7 @@ test("startLocalAppServer serves app state and can enable CI for a repository", 
     assert.equal(ciResponse.status, 200);
     assert.equal(existsSync(join(root, ".github", "workflows", "evidoc.yml")), true);
     const workflow = await readFile(join(root, ".github", "workflows", "evidoc.yml"), "utf8");
-    assert.match(workflow, /handong66\/Evidoc\/packages\/github-action@main/);
+    assert.match(workflow, /handong66\/Evidoc\/packages\/github-action@v0\.2\.0/);
     assert.match(workflow, /permissions:\n  contents: read\n  actions: read\n  pull-requests: write/);
     assert.doesNotMatch(workflow, /security-events: write/);
     assert.match(workflow, /fail-on: review_needed/);
@@ -446,6 +482,43 @@ test("startLocalAppServer serves app state and can enable CI for a repository", 
     const html = await htmlResponse.text();
     assert.match(html, /Evidoc Local App/);
     assert.match(html, /CI enabled/);
+  } finally {
+    await app.close();
+  }
+});
+
+test("startLocalAppServer refuses non-loopback bind hosts", async () => {
+  const root = await fixture();
+  await write(root, "README.md", "# local app\n");
+
+  await assert.rejects(
+    startLocalAppServer({ roots: [root], host: "0.0.0.0", port: 0, openBrowser: false }),
+    /must be loopback-only/
+  );
+});
+
+test("local app applies deterministic safe fixes and returns the refreshed state", async () => {
+  const root = await fixture("evidoc-local-safe-fix-");
+  await write(root, "package.json", JSON.stringify({ packageManager: "pnpm@10.0.0", scripts: { test: "node --test" } }));
+  await write(root, "README.md", "Run `npm test` before merging.\n");
+
+  const app = await startLocalAppServer({ roots: [root], port: 0, openBrowser: false });
+  try {
+    const response = await fetch(`http://127.0.0.1:${app.port}/api/fix-safe`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ root })
+    });
+    const payload = await response.json() as {
+      result: { applied: Array<{ docPath: string }>; postFixSummary: { findings: number } };
+      state: { repositories: Array<{ report: { summary: { findings: number } } }> };
+    };
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(payload.result.applied.map((item) => item.docPath), ["README.md"]);
+    assert.equal(payload.result.postFixSummary.findings, 0);
+    assert.equal(payload.state.repositories[0].report.summary.findings, 0);
+    assert.equal(await readFile(join(root, "README.md"), "utf8"), "Run `pnpm test` before merging.\n");
   } finally {
     await app.close();
   }
@@ -680,12 +753,46 @@ test("local app server rejects oversized JSON bodies and cross-origin writes", a
     });
     assert.equal(crossOriginResponse.status, 403);
 
+    const rebindingResponse = await rawRequest(app.port, "/api/scan", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        host: "evil.example",
+        origin: "http://evil.example"
+      },
+      body: JSON.stringify({ root })
+    });
+    assert.equal(rebindingResponse.status, 403);
+
+    const rebindingReadResponse = await rawRequest(app.port, "/api/state", {
+      headers: { host: "evil.example" }
+    });
+    assert.equal(rebindingReadResponse.status, 403);
+
     const htmlResponse = await fetch(baseUrl);
     assert.equal(htmlResponse.headers.get("x-content-type-options"), "nosniff");
     assert.equal(htmlResponse.headers.get("x-frame-options"), "DENY");
   } finally {
     await app.close();
   }
+});
+
+test("generated pre-push hook compares the feature branch with its base branch", async () => {
+  const root = await fixture("evidoc-local-pre-push-");
+  gitInitBranch(root, "main");
+  assert.equal(spawnSync("git", ["config", "user.email", "test@example.com"], { cwd: root }).status, 0);
+  assert.equal(spawnSync("git", ["config", "user.name", "Test User"], { cwd: root }).status, 0);
+  await write(root, "README.md", "# Initial\n");
+  assert.equal(spawnSync("git", ["add", "."], { cwd: root }).status, 0);
+  assert.equal(spawnSync("git", ["commit", "-m", "initial"], { cwd: root }).status, 0);
+
+  await enableLocalGitGate(root, { force: true });
+  const hook = await readFile(join(root, ".githooks", "pre-push"), "utf8");
+
+  assert.match(hook, /EVIDOC_BASE_BRANCH="\$\{EVIDOC_BASE_BRANCH:-main\}"/);
+  assert.match(hook, /EVIDOC_BASELINE="merge-base:\$EVIDOC_BASE_BRANCH"/);
+  assert.match(hook, /--since "\$EVIDOC_BASELINE"/);
+  assert.doesNotMatch(hook, /--since HEAD/);
 });
 
 test("local app server can scaffold repository support files", async () => {

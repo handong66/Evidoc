@@ -49,6 +49,8 @@ test("runtime packages with command-line bins restrict published files", async (
     const packageJsonPath = join(root, "packages", directory, "package.json");
     const manifest = JSON.parse(await readFile(packageJsonPath, "utf8")) as { files?: string[] };
 
-    assert.deepEqual(manifest.files, ["dist/src"]);
+    assert.deepEqual(manifest.files, ["dist/src", "README.md", "LICENSE"]);
+    await access(join(root, "packages", directory, "README.md"));
+    await access(join(root, "packages", directory, "LICENSE"));
   }
 });

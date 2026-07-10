@@ -4,25 +4,25 @@ This is a maintainer and integrator reference, not the first document a new user
 
 In one minute: Evidoc has one core scanner, and every surface reuses that evidence instead of inventing its own drift status. The CLI, local Web UI, Local Git hooks, GitHub Action, MCP server, reports, graph, patch proposals, and review log all work from the same repository-local evidence model.
 
-Evidoc is organized as a full product from the first commit. Individual releases may expose only part of the surface, but package boundaries should already match the final system.
+Evidoc uses a workspace so entrypoints can be installed independently, but detector truth stays in core. Published compatibility packages remain thin facades when moving their API would create needless breakage.
 
 ## Product Surfaces
 
-- `@handong66/evidoc-core`: repository scanning, document indexing, deterministic detectors, evidence model, Agent Runtime Contract creation, stable finding fingerprints, shared path-safety helpers, and report assembly.
+- `@handong66/evidoc-core`: repository scanning, configuration validation, changed-impact calculation, deterministic detectors, evidence model, frontmatter/review-log contracts, MCP tool metadata, Agent Runtime Contract creation, stable finding fingerprints, shared path-safety helpers, and report assembly.
 - `@handong66/evidoc-cli`: local command line interface for `demo`, `app`, `serve`, `check`, `diagnose`, `diff`, `guard`, `recipes`, `fix`, `verify`, `agent-eval`, `index`, `explain`, `graph`, `dashboard`, `draft`, `validate`, `multi`, `mcp-tools`, and `action`.
 - `@handong66/evidoc-reports`: text and Markdown formatting, with JSON emitted directly by product surfaces.
 - `@handong66/evidoc-github-action`: Action wrapper that runs the CLI in advisory or gate mode.
 - `@handong66/evidoc-mcp-server`: `evidoc.agent_scan` as the default read-only repair entrypoint, `evidoc.get_drift_status` as the status entrypoint, focused read tools after that, and review-log recording as the only write tool. Writes require explicit authorization and only target roots inside the MCP server working directory.
 - `@handong66/evidoc-graph`: file, document, symbol, API, claim, command, and agent-instruction graph.
-- `@handong66/evidoc-frontmatter`: optional source binding schema, validation, and backfill suggestions.
-- `@handong66/evidoc-patcher`: deterministic safe patches, LLM draft patches, and patch validation.
+- `@handong66/evidoc-frontmatter`: compatibility re-export of the canonical core source-binding, validation, and backfill API.
+- `@handong66/evidoc-patcher`: deterministic safe patches, bounded LLM request construction, and patch validation. It does not call a model provider itself.
 - `@handong66/evidoc-dashboard`: static report renderer plus the bilingual local Command Center UI, including fleet health, repository cockpit, Local Git Gate state, staged and unstaged changed files, affected docs, latest gate result with gate baseline, baseline commit, runtime status, fingerprint, freshness, triage queue, repair console, and copyable agent prompts.
-- `@handong66/evidoc-local-app`: local Web server, auto-init, Local Git Gate enablement, system folder picker bridge, multi-repository scan state, Git status, scan history, local gate report summaries, agent skill scaffolding, and GUI actions.
+- `@handong66/evidoc-local-app`: loopback-only Web server, auto-init, deterministic safe-fix action, Local Git Gate enablement, system folder picker bridge, multi-repository scan state, Git status, scan history, local gate report summaries, agent skill scaffolding, and GUI actions.
   Added roots must be existing real directories and are stored by canonical real path.
-  File-opening and write-capable actions are limited to roots already added to the local app.
+  File-opening and write-capable actions are limited to roots already added to the Local App, with exact Host validation and same-origin POST enforcement.
   Generated config, workflow, local hooks, history, reports, and scaffold files use repository-bound writable path checks.
   File-opening resolves real paths and rejects symlink escapes; POST endpoints reject cross-origin browser writes and oversized JSON bodies.
-- `@handong66/evidoc-review-log`: append-only human review decisions and expiry checks.
+- `@handong66/evidoc-review-log`: compatibility re-export of the canonical core append-only review-decision API.
 
 ## Data Flow
 
@@ -48,7 +48,7 @@ Repository files
 5. Changed-source documentation coverage when configured.
 6. API spec and schema drift.
 7. Symbol and claim drift.
-8. Semantic drift and patch drafting.
+8. Patch drafting from verified findings. Evidoc does not run an LLM or semantic detector during normal scans.
 
 This order is intentional: the system must exhaust deterministic evidence before asking an LLM to reason about ambiguous claims.
 
@@ -83,11 +83,11 @@ GitHub integration intentionally stops at GitHub Actions. Evidoc does not includ
 - Evidoc health score, computed from broken and review-needed findings.
 - Diff impact mode for changed files and affected documents, including staged pre-commit scans and `merge-base:<branch>` baselines.
 
-## Agent Evaluation Contract
+## Experimental Agent Evaluation Pack
 
-`agent-eval --json` emits the local `evidoc-agent-ab-v0` benchmark pack. It does not run external agents. The pack captures the current coverage baseline, the default MCP entrypoint, read-parity repair tasks, safe-fix criteria, and pass/fail criteria for real Codex, Claude Code, and OpenCode A/B runs.
+`agent-eval --json` emits the local `evidoc-agent-ab-v0` benchmark specification. It does not run, compare, or score external agents. The pack captures a coverage baseline, the default MCP entrypoint, read-parity repair tasks, safe-fix criteria, and proposed pass/fail criteria for a maintainer-run experiment.
 
-The Agent Runtime Contract is the shared anti-conflict layer for Local Git reports, MCP results, local app summaries, and generated agent instructions.
+The Agent Runtime Contract is the shared anti-conflict layer for Local Git reports, GitHub Action results, MCP results, Local App summaries, and generated agent instructions.
 It records `source=evidoc`, `event`, `mode`, `scope`, `baseline`, optional `baselineCommit`, `status`, `generatedAt`, `scannedAt`, `changedFileFingerprints`, an aggregate fingerprint, and per-finding fingerprints.
 Hooks report `mode=blocking`; manual, MCP, and IDE-style surfaces are advisory unless they are summarizing a hook failure.
 User-facing reminders reject stale local reports by changed-file set and content fingerprints, with timestamp fallback for older reports, then dedupe by `runtime.findings[].fingerprint`.

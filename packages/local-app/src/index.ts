@@ -4,7 +4,10 @@ import { access, appendFile, chmod, mkdir, readFile, readdir, realpath, stat, wr
 import { basename, dirname, join, resolve } from "node:path";
 import {
   checkRepository,
+  createAgentRuntimeContract,
+  createChangedImpactFromFiles,
   detectRepositoryEvidocWorkflowText,
+  EVIDOC_VERSION,
   evidocWorkflowWarnings,
   fingerprintFileContent,
   resolveExistingPathInsideRoot,
@@ -12,6 +15,7 @@ import {
   type EvidocConfig,
   type DriftReport
 } from "@handong66/evidoc-core";
+import { applySafePatchProposals } from "@handong66/evidoc-patcher";
 import {
   renderLocalAppHtml,
   type LocalAppDashboardState,
@@ -63,6 +67,7 @@ interface ServerState {
   roots: string[];
   current: LocalAppDashboardState;
   clients: Set<ServerResponse>;
+  authority?: string;
 }
 
 const DEFAULT_HOST = "127.0.0.1";
@@ -72,7 +77,7 @@ const MAX_JSON_BODY_BYTES = 1_000_000;
 const DIRECTORY_PICKER_TIMEOUT_MS = 120_000;
 const LOCAL_HISTORY_GITIGNORE_PATH = ".evidoc/.gitignore";
 const LOCAL_HISTORY_GITIGNORE_ENTRIES = ["history.jsonl", "reports/"];
-const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="10" fill="#11100e"/><path d="M14 16h16c13 0 20 6 20 16s-7 16-20 16H14V16zm10 9v14h6c7 0 10-2 10-7s-3-7-10-7h-6z" fill="#f6c76f"/><path d="M48 16v9H32v-9h16zm0 23v9H32v-9h16z" fill="#8cb9ff"/></svg>`;
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="10" fill="#11100e"/><path d="M15 14h34v9H25v6h20v8H25v7h24v9H15z" fill="#f6c76f"/><path d="m35 35 6 6 11-13 6 5-17 20-12-12z" fill="#8cb9ff"/></svg>`;
 
 class HttpError extends Error {
   constructor(
@@ -100,10 +105,16 @@ export async function scanLocalAppRepositories(
       await appendHistory(root, report);
     }
 
+    const runtime = createAgentRuntimeContract(report, {
+      event: "local_app",
+      mode: "advisory",
+      scope: "full_repository"
+    });
     repositories.push({
       root,
       name: basename(root) || root,
       health: healthFromReport(report),
+      runtime,
       ci: await inspectGithubAction(root),
       localGit: await inspectLocalGitGate(root, report),
       history: await readHistory(root, options.historyLimit ?? DEFAULT_HISTORY_LIMIT),
@@ -119,7 +130,7 @@ export async function scanLocalAppRepositories(
 }
 
 export async function startLocalAppServer(options: LocalAppServerOptions): Promise<LocalAppServer> {
-  const host = options.host ?? DEFAULT_HOST;
+  const host = requireLoopbackHost(options.host ?? DEFAULT_HOST);
   const requestedPort = options.port ?? DEFAULT_PORT;
   const selectDirectory = options.selectDirectory ?? selectSystemDirectory;
   const roots = await normalizeRoots(options.roots.length > 0 ? options.roots : [process.cwd()]);
@@ -172,7 +183,9 @@ export async function startLocalAppServer(options: LocalAppServerOptions): Promi
   await listenWithFallback(server, requestedPort, host, options.port === undefined);
   const address = server.address();
   const actualPort = typeof address === "object" && address ? address.port : requestedPort;
-  const url = `http://${host}:${actualPort}`;
+  const urlHost = host.includes(":") ? `[${host}]` : host;
+  const url = `http://${urlHost}:${actualPort}`;
+  state.authority = new URL(url).host;
 
   let watcher: NodeJS.Timeout | undefined;
   if (options.watch) {
@@ -267,9 +280,10 @@ export async function inspectLocalGitGate(
   const prePushHook = await exists(join(root, ".githooks", "pre-push"));
   const stagedChangedFiles = parseGitPathList(await runGit(root, ["diff", "--name-only", "--cached"]));
   const unstagedChangedFiles = parseGitPathList(await runGit(root, ["diff", "--name-only"]));
-  const affectedDocuments = await findLocalGitAffectedDocuments(root, report, [
-    ...new Set([...stagedChangedFiles, ...unstagedChangedFiles])
-  ]);
+  const localChangedFiles = [...new Set([...stagedChangedFiles, ...unstagedChangedFiles])];
+  const affectedDocuments = report
+    ? (await createChangedImpactFromFiles(root, localChangedFiles)).affectedDocuments
+    : [];
   const lastGate = await readLastLocalGitGate(root, { stagedChangedFiles, unstagedChangedFiles });
   const issues: string[] = [];
   if (!hasCommits) issues.push("no commits yet; create an initial baseline commit");
@@ -342,6 +356,10 @@ async function handleRequest(
   const url = new URL(request.url ?? "/", "http://localhost");
 
   try {
+    if (!isAllowedRequestHost(request, state.authority)) {
+      sendJson(response, { error: "untrusted local app host rejected" }, 403);
+      return;
+    }
     if (request.method === "POST" && !isAllowedRequestOrigin(request)) {
       sendJson(response, { error: "cross-origin local app request rejected" }, 403);
       return;
@@ -454,6 +472,23 @@ async function handleRequest(
       const result = await enableLocalGitGate(root, { force: body.force, installHooks: true });
       await rescan();
       sendJson(response, { result, state: state.current });
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/fix-safe") {
+      const body = await readJsonBody<{ root?: string }>(request);
+      if (!body.root) {
+        sendJson(response, { error: "root is required" }, 400);
+        return;
+      }
+      const root = await resolveKnownRoot(state, body.root);
+      if (!root) {
+        sendJson(response, { error: "unknown repository root" }, 400);
+        return;
+      }
+      const result = await applySafePatchProposals(root, { allowWrites: true });
+      const nextState = await rescan(root);
+      sendJson(response, { result, state: nextState });
       return;
     }
 
@@ -592,36 +627,6 @@ async function readHistory(root: string, limit: number): Promise<LocalAppHistory
   } catch {
     return [];
   }
-}
-
-async function findLocalGitAffectedDocuments(
-  root: string,
-  report: DriftReport | undefined,
-  changedFiles: string[]
-): Promise<string[]> {
-  if (!report || changedFiles.length === 0) return [];
-
-  const affected = new Set<string>();
-  const changed = new Set(changedFiles);
-  for (const document of report.documents) {
-    if (changed.has(document.path)) {
-      affected.add(document.path);
-      continue;
-    }
-
-    const documentPath = await resolveExistingPathInsideRoot(root, document.path);
-    if (!documentPath) continue;
-    let text: string;
-    try {
-      text = await readFile(documentPath, "utf8");
-    } catch {
-      continue;
-    }
-    if (changedFiles.some((file) => !isMarkdownPath(file) && documentReferencesChangedPath(text, file))) {
-      affected.add(document.path);
-    }
-  }
-  return [...affected].sort();
 }
 
 async function readLastLocalGitGate(
@@ -882,8 +887,8 @@ export function defaultGithubWorkflow(options: { pushBranches?: string[] } = {})
     "  evidoc:",
     "    runs-on: ubuntu-latest",
     "    steps:",
-    "      - uses: actions/checkout@v4",
-    "      - uses: handong66/Evidoc/packages/github-action@main",
+    "      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4",
+    `      - uses: handong66/Evidoc/packages/github-action@v${EVIDOC_VERSION}`,
     "        with:",
     "          fail-on: review_needed",
     '          sarif: "false"',
@@ -899,6 +904,10 @@ export async function detectRepositoryDefaultBranch(root: string): Promise<strin
     const remoteHead = await runGit(root, ["symbolic-ref", "--short", `refs/remotes/${remote}/HEAD`]);
     const remoteBranch = sanitizeBranchName(remoteHead?.replace(new RegExp(`^${escapeRegExp(remote)}/`), "").trim());
     if (remoteBranch) return remoteBranch;
+  }
+
+  for (const candidate of DEFAULT_PUSH_BRANCHES) {
+    if (await runGit(root, ["rev-parse", "--verify", `refs/heads/${candidate}`])) return candidate;
   }
 
   const currentBranch = await runGit(root, ["branch", "--show-current"]);
@@ -992,30 +1001,6 @@ function parseGitPathList(stdout: string | undefined): string[] {
     .map((line) => line.trim().replaceAll("\\", "/"))
     .filter(Boolean)
     .sort();
-}
-
-function isMarkdownPath(path: string): boolean {
-  return path.endsWith(".md") || path.endsWith(".mdx");
-}
-
-function documentReferencesChangedPath(text: string, path: string): boolean {
-  const normalizedText = text.replaceAll("\\", "/").toLowerCase();
-  const normalizedPath = path.replaceAll("\\", "/").toLowerCase();
-  if (normalizedText.includes(normalizedPath)) return true;
-
-  const parts = normalizedPath.split("/").filter(Boolean);
-  for (let length = parts.length - 1; length > 0; length -= 1) {
-    const directory = `${parts.slice(0, length).join("/")}/`;
-    if (
-      normalizedText.includes(directory) ||
-      normalizedText.includes(`./${directory}`) ||
-      normalizedText.includes(`../${directory}`)
-    ) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 export async function scaffoldRepository(
@@ -1115,9 +1100,10 @@ async function scaffoldFeature(
 }
 
 async function writeLocalGitHookFiles(root: string, force: boolean): Promise<LocalAppFileWriteResult[]> {
+  const baseBranch = (await detectRepositoryDefaultBranch(root)) ?? "main";
   const files = await Promise.all([
-    writeScaffoldFile(root, ".githooks/pre-commit", localGitHookScript("pre-commit"), force),
-    writeScaffoldFile(root, ".githooks/pre-push", localGitHookScript("pre-push"), force)
+    writeScaffoldFile(root, ".githooks/pre-commit", localGitHookScript("pre-commit", baseBranch), force),
+    writeScaffoldFile(root, ".githooks/pre-push", localGitHookScript("pre-push", baseBranch), force)
   ]);
   await Promise.all([
     chmod(join(root, ".githooks", "pre-commit"), 0o755).catch(() => undefined),
@@ -1126,19 +1112,36 @@ async function writeLocalGitHookFiles(root: string, force: boolean): Promise<Loc
   return files;
 }
 
-function localGitHookScript(event: "pre-commit" | "pre-push"): string {
+function localGitHookScript(event: "pre-commit" | "pre-push", baseBranch: string): string {
   const fallbackCommand =
     event === "pre-commit"
       ? "check --changed-only --fail-on=review_needed"
-      : "check --changed-only --since HEAD --fail-on=review_needed";
+      : 'check --changed-only --since "$EVIDOC_BASELINE" --fail-on=review_needed';
   const guardCommand =
     event === "pre-commit"
       ? "guard --event pre-commit --fail-on=review_needed"
-      : "guard --event pre-push --since HEAD --fail-on=review_needed";
+      : 'guard --event pre-push --since "$EVIDOC_BASELINE" --fail-on=review_needed';
+  const prePushSetup =
+    event === "pre-push"
+      ? [
+          `EVIDOC_BASE_BRANCH="\${EVIDOC_BASE_BRANCH:-${baseBranch}}"`,
+          'EVIDOC_BASELINE="merge-base:$EVIDOC_BASE_BRANCH"',
+          "if [ ! -t 0 ]; then",
+          "  while IFS=' ' read -r _local_ref _local_oid _remote_ref remote_oid; do",
+          '    case "$remote_oid" in',
+          "      ''|*[!0]*) EVIDOC_BASELINE=\"$remote_oid\"; break ;;",
+          "      *) ;;",
+          "    esac",
+          "  done",
+          "fi",
+          ""
+        ]
+      : [];
   return [
     "#!/usr/bin/env sh",
     "set -u",
     "",
+    ...prePushSetup,
     "if ! command -v node >/dev/null 2>&1; then",
     `  echo "Evidoc ${event} skipped: install Node.js plus Evidoc, or run npx repo-evidoc ${fallbackCommand}." >&2`,
     "  exit 0",
@@ -1431,15 +1434,25 @@ function isAllowedRequestOrigin(request: IncomingMessage): boolean {
   const origin = Array.isArray(originHeader) ? originHeader[0] : originHeader;
   if (!origin) return true;
 
-  const host = request.headers.host;
-  if (!host) return false;
-
   try {
     const parsed = new URL(origin);
-    return parsed.host === host && (parsed.protocol === "http:" || parsed.protocol === "https:");
+    return parsed.host === request.headers.host && parsed.protocol === "http:";
   } catch {
     return false;
   }
+}
+
+function isAllowedRequestHost(request: IncomingMessage, authority: string | undefined): boolean {
+  if (!authority || !request.headers.host) return false;
+  return request.headers.host.toLowerCase() === authority.toLowerCase();
+}
+
+function requireLoopbackHost(host: string): string {
+  const normalized = host.trim().toLowerCase().replace(/^\[|\]$/g, "");
+  if (normalized === "127.0.0.1" || normalized === "localhost" || normalized === "::1") {
+    return normalized;
+  }
+  throw new Error("Evidoc Local App host must be loopback-only: 127.0.0.1, localhost, or ::1.");
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {

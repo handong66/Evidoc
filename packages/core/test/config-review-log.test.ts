@@ -82,6 +82,28 @@ test("reports missing configured document and API roots as config drift", async 
   assert.ok(report.findings.some((finding) => finding.evidence[0].subject === "apiSpecPaths"));
 });
 
+test("rejects invalid config JSON instead of silently scanning with defaults", async () => {
+  const root = await fixture();
+  await write(root, ".evidoc/config.json", "{ not valid json\n");
+  await write(root, "README.md", "# Existing documentation\n");
+
+  await assert.rejects(
+    () => checkRepository(root),
+    /invalid JSON in \.evidoc\/config\.json/i
+  );
+});
+
+test("rejects invalid config field types instead of silently weakening coverage", async () => {
+  const root = await fixture();
+  await write(root, ".evidoc/config.json", JSON.stringify({ docRoots: "docs" }));
+  await write(root, "README.md", "# Existing documentation\n");
+
+  await assert.rejects(
+    () => checkRepository(root),
+    /docRoots must be an array of repository-relative paths/i
+  );
+});
+
 test("suppresses active review-log overrides and reports expired overrides", async () => {
   const root = await fixture();
   await write(root, "README.md", "Code lives in `src/missing.ts`.\n");

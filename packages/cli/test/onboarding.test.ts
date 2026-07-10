@@ -67,7 +67,7 @@ test("init creates config and GitHub workflow for zero-friction onboarding", asy
   assert.match(await readFile(join(root, ".evidoc", ".gitignore"), "utf8"), /^history\.jsonl$/m);
 
   const workflow = await readFile(join(root, ".github", "workflows", "evidoc.yml"), "utf8");
-  assert.match(workflow, /handong66\/Evidoc\/packages\/github-action@main\n/);
+  assert.match(workflow, /handong66\/Evidoc\/packages\/github-action@v0\.2\.0\n/);
   assert.match(workflow, /permissions:\n  contents: read\n  actions: read\n  pull-requests: write/);
   assert.doesNotMatch(workflow, /security-events: write/);
   assert.match(workflow, /fail-on: review_needed/);

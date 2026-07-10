@@ -185,6 +185,24 @@ test("rejects unknown CLI options instead of silently ignoring requested outputs
   assert.match(stderr, /evidoc action/);
 });
 
+test("rejects invalid fail-on policies instead of silently disabling the gate", async () => {
+  const root = await fixture();
+  await write(root, "README.md", "Code lives in `src/missing.ts`.\n");
+  let stderr = "";
+
+  const exitCode = await runCli(["action", "--fail-on=revie_needed"], {
+    cwd: root,
+    stdout: () => {},
+    stderr: (chunk: string) => {
+      stderr += chunk;
+    }
+  });
+
+  assert.equal(exitCode, 2);
+  assert.match(stderr, /Invalid --fail-on value "revie_needed"/);
+  assert.match(stderr, /none, broken, or review_needed/);
+});
+
 test("action accepts PR comment and annotation file aliases for local smoke runs", async () => {
   const root = await fixture();
   const summaryPath = join(root, "comment.md");
@@ -192,7 +210,7 @@ test("action accepts PR comment and annotation file aliases for local smoke runs
   await write(root, "README.md", "Code lives in `src/missing.ts`.\n");
 
   const exitCode = await runCli(
-    ["action", "--pr-comment-file", summaryPath, "--annotations-file", annotationsPath],
+    ["action", "--fail-on=none", "--pr-comment-file", summaryPath, "--annotations-file", annotationsPath],
     {
       cwd: root,
       stdout: () => {},
@@ -210,7 +228,7 @@ test("action accepts github format flag for copied CI-like commands", async () =
   const summaryPath = join(root, "comment.md");
   await write(root, "README.md", "Code lives in `src/missing.ts`.\n");
 
-  const exitCode = await runCli(["action", "--format=github", "--summary", summaryPath], {
+  const exitCode = await runCli(["action", "--fail-on=none", "--format=github", "--summary", summaryPath], {
     cwd: root,
     stdout: () => {},
     stderr: () => {}

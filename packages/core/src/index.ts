@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { detectDrift } from "./detectors.js";
 import { readRepository } from "./repository.js";
 import type {
@@ -34,10 +33,31 @@ export type {
 } from "./types.js";
 
 export { detectDrift } from "./detectors.js";
+export { createChangedImpactFromFiles, createChangedImpactFromSnapshot } from "./changed-impact.js";
+export type { ChangedImpact } from "./changed-impact.js";
+export { parseFailOnPolicy } from "./fail-policy.js";
+export type { FailOn } from "./fail-policy.js";
+export {
+  backfillDocumentFrontmatter,
+  parseDocumentFrontmatter,
+  serializeDocumentFrontmatter,
+  validateDocumentFrontmatter
+} from "./frontmatter.js";
+export type { DocumentFrontmatter, ParsedDocumentFrontmatter, SourceBinding } from "./frontmatter.js";
+export {
+  appendReviewLogEntry,
+  isFindingReviewed,
+  parseReviewLog,
+  serializeReviewLogEntry
+} from "./review-log.js";
+export type { ReviewDecision } from "./review-log.js";
+export { isWriteToolAllowed, listMcpTools, READ_ONLY_TOOLS, WRITE_TOOLS } from "./mcp-contract.js";
+export type { EvidocMcpTool, McpToolDefinition } from "./mcp-contract.js";
+export { EVIDOC_VERSION } from "./version.js";
 export { createAgentRuntimeContract, fingerprintDriftFinding, fingerprintFileContent } from "./agent-runtime.js";
 export type { AgentRuntimeContractOptions } from "./agent-runtime.js";
 export { readFindingDocuments } from "./finding-documents.js";
-export { readRepository } from "./repository.js";
+export { readEvidocConfig, readRepository } from "./repository.js";
 export {
   detectEvidocWorkflowText,
   detectRepositoryEvidocWorkflowText,
@@ -269,22 +289,6 @@ export async function checkRepositories(roots: string[]): Promise<MultiRepositor
       })
     }
   };
-}
-
-export function createScanCacheKey(input: {
-  files: string[];
-  configHash: string;
-  changedFiles?: string[];
-}): string {
-  return createHash("sha256")
-    .update(
-      JSON.stringify({
-        files: [...input.files].sort(),
-        configHash: input.configHash,
-        changedFiles: [...(input.changedFiles ?? [])].sort()
-      })
-    )
-    .digest("hex");
 }
 
 function summarizeFindings(

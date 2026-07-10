@@ -2,8 +2,12 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import {
   checkRepository,
+  createAgentRuntimeContract,
   detectRepositoryEvidocWorkflowText,
   evidocWorkflowWarnings,
+  parseFailOnPolicy,
+  type AgentRuntimeContract,
+  type FailOn,
   type DriftReport
 } from "@handong66/evidoc-core";
 import {
@@ -13,8 +17,6 @@ import {
   formatSarifReport
 } from "@handong66/evidoc-reports";
 
-export type FailOn = "none" | "broken" | "review_needed";
-
 export interface ActionPolicy {
   failOn: FailOn;
 }
@@ -22,11 +24,15 @@ export interface ActionPolicy {
 export interface GithubActionOptions extends ActionPolicy {
   cwd: string;
   changedFiles?: string[];
+  changedSourceFiles?: string[];
+  undocumentedChangedFiles?: string[];
+  baseline?: string;
 }
 
 export interface GithubActionResult {
   exitCode: number;
   report: DriftReport;
+  runtime: AgentRuntimeContract;
   setupWarnings: string[];
   markdownSummary: string;
   annotations: string;
@@ -41,7 +47,19 @@ export function shouldFailAction(report: DriftReport, policy: ActionPolicy): boo
 }
 
 export async function runGithubAction(options: GithubActionOptions): Promise<GithubActionResult> {
-  const report = await checkRepository(options.cwd, { changedFiles: options.changedFiles });
+  const report = await checkRepository(options.cwd, {
+    changedFiles: options.changedFiles,
+    changedSourceFiles: options.changedSourceFiles,
+    undocumentedChangedFiles: options.undocumentedChangedFiles
+  });
+  const runtime = createAgentRuntimeContract(report, {
+    event: "github_action",
+    mode: options.failOn === "none" ? "advisory" : "blocking",
+    scope: options.changedFiles === undefined ? "full_repository" : "worktree",
+    baseline: options.baseline,
+    changedFiles: options.changedSourceFiles,
+    affectedDocuments: options.changedFiles
+  });
   const setupWarnings = await findEvidocWorkflowWarnings(options.cwd);
   const reportFormatOptions = {
     setupWarnings,
@@ -52,6 +70,7 @@ export async function runGithubAction(options: GithubActionOptions): Promise<Git
   return {
     exitCode: shouldFailAction(report, options) ? 1 : 0,
     report,
+    runtime,
     setupWarnings,
     markdownSummary,
     annotations: formatGithubAnnotations(report),
@@ -120,6 +139,5 @@ function isSafeBranchName(branch: string): boolean {
 }
 
 export function parseFailOn(value: string | undefined): FailOn {
-  if (value === "broken" || value === "review_needed" || value === "none") return value;
-  return "review_needed";
+  return parseFailOnPolicy(value, "review_needed");
 }

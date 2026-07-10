@@ -1,6 +1,7 @@
 import { access, readFile, readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { resolveExistingPathInsideRoot } from "./path-safety.js";
+import { normalizeRepositoryRelativePath, resolveExistingPathInsideRoot } from "./path-safety.js";
+import { parseReviewLog } from "./review-log.js";
 import type {
   ApiOperation,
   DocumentRecord,
@@ -29,7 +30,7 @@ export async function readRepository(
   options: ReadRepositoryOptions = {}
 ): Promise<RepositorySnapshot> {
   const files = await listFiles(root);
-  const config = await readConfig(root);
+  const config = await readEvidocConfig(root);
   const packageManifest = await readPackageManifest(root, files);
   const { documents, skippedOversized } = await readDocuments(root, files, config, options);
   const apiOperations = await readApiOperations(root, files, config);
@@ -195,37 +196,138 @@ async function readApiOperations(
   return operations;
 }
 
-async function readConfig(root: string): Promise<EvidocConfig> {
+export async function readEvidocConfig(root: string): Promise<EvidocConfig> {
+  const configPath = join(root, ".evidoc", "config.json");
+  let raw: string;
   try {
-    const raw = await readFile(join(root, ".evidoc", "config.json"), "utf8");
-    const parsed = JSON.parse(raw) as EvidocConfig;
-    return {
-      ...parsed,
-      ignorePatterns: parsed.ignorePatterns ?? [],
-      docRoots: parsed.docRoots?.map(normalizePath),
-      apiSpecPaths: parsed.apiSpecPaths?.map(normalizePath)
-    };
-  } catch {
-    return { ignorePatterns: [] };
+    raw = await readFile(configPath, "utf8");
+  } catch (error) {
+    if (isMissingFileError(error)) return { ignorePatterns: [] };
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Unable to read .evidoc/config.json: ${detail}`);
   }
+
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Invalid JSON in .evidoc/config.json: ${detail}`);
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Invalid .evidoc/config.json: the root value must be an object.");
+  }
+
+  const parsed = value as Record<string, unknown>;
+  const config: EvidocConfig = {
+    ignorePatterns: readPatternList(parsed.ignorePatterns, "ignorePatterns")
+  };
+  const docRoots = readRepositoryPathList(parsed.docRoots, "docRoots");
+  const apiSpecPaths = readRepositoryPathList(parsed.apiSpecPaths, "apiSpecPaths");
+  if (docRoots !== undefined) config.docRoots = docRoots;
+  if (apiSpecPaths !== undefined) config.apiSpecPaths = apiSpecPaths;
+
+  const severityOverrides = readSeverityOverrides(parsed.severityOverrides);
+  const ownerMapping = readStringRecord(parsed.ownerMapping, "ownerMapping");
+  if (severityOverrides !== undefined) config.severityOverrides = severityOverrides;
+  if (ownerMapping !== undefined) config.ownerMapping = ownerMapping;
+
+  const reviewTtlDays = readNonNegativeNumber(parsed.reviewTtlDays, "reviewTtlDays");
+  const maxFileBytes = readPositiveInteger(parsed.maxFileBytes, "maxFileBytes");
+  if (reviewTtlDays !== undefined) config.reviewTtlDays = reviewTtlDays;
+  if (maxFileBytes !== undefined) config.maxFileBytes = maxFileBytes;
+
+  const requireTestsForSources = readBoolean(parsed.requireTestsForSources, "requireTestsForSources");
+  const requireDocsForChangedSources = readBoolean(
+    parsed.requireDocsForChangedSources,
+    "requireDocsForChangedSources"
+  );
+  if (requireTestsForSources !== undefined) config.requireTestsForSources = requireTestsForSources;
+  if (requireDocsForChangedSources !== undefined) config.requireDocsForChangedSources = requireDocsForChangedSources;
+
+  return config;
+}
+
+function readRepositoryPathList(value: unknown, field: string): string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    throw new Error(`Invalid .evidoc/config.json: ${field} must be an array of repository-relative paths.`);
+  }
+  return value.map((entry) => {
+    const normalized = normalizePath(entry);
+    if (!normalizeRepositoryRelativePath(normalized)) {
+      throw new Error(`Invalid .evidoc/config.json: ${field} contains unsafe path "${entry}".`);
+    }
+    return normalized;
+  });
+}
+
+function readPatternList(value: unknown, field: string): string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string" || !entry.trim())) {
+    throw new Error(`Invalid .evidoc/config.json: ${field} must be an array of non-empty glob strings.`);
+  }
+  return value.map((entry) => entry.replaceAll("\\", "/").replace(/^\.\//, ""));
+}
+
+function readSeverityOverrides(value: unknown): EvidocConfig["severityOverrides"] {
+  if (value === undefined) return undefined;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Invalid .evidoc/config.json: severityOverrides must be an object.");
+  }
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.some(([key, severity]) => !key || !["low", "medium", "high"].includes(String(severity)))) {
+    throw new Error("Invalid .evidoc/config.json: severityOverrides values must be low, medium, or high.");
+  }
+  return Object.fromEntries(entries) as NonNullable<EvidocConfig["severityOverrides"]>;
+}
+
+function readStringRecord(value: unknown, field: string): Record<string, string> | undefined {
+  if (value === undefined) return undefined;
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    Object.entries(value as Record<string, unknown>).some(([key, item]) => !key || typeof item !== "string")
+  ) {
+    throw new Error(`Invalid .evidoc/config.json: ${field} must be an object with string values.`);
+  }
+  return value as Record<string, string>;
+}
+
+function readBoolean(value: unknown, field: string): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "boolean") {
+    throw new Error(`Invalid .evidoc/config.json: ${field} must be a boolean.`);
+  }
+  return value;
+}
+
+function readNonNegativeNumber(value: unknown, field: string): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw new Error(`Invalid .evidoc/config.json: ${field} must be a non-negative number.`);
+  }
+  return value;
+}
+
+function readPositiveInteger(value: unknown, field: string): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) {
+    throw new Error(`Invalid .evidoc/config.json: ${field} must be a positive integer.`);
+  }
+  return value;
+}
+
+function isMissingFileError(error: unknown): boolean {
+  return Boolean(error && typeof error === "object" && "code" in error && error.code === "ENOENT");
 }
 
 async function readReviewLog(root: string): Promise<ReviewLogEntry[]> {
   try {
     const raw = await readFile(join(root, ".evidoc", "review-log.jsonl"), "utf8");
-    const entries: ReviewLogEntry[] = [];
-    for (const line of raw.split(/\r?\n/)) {
-      if (!line.trim()) continue;
-      try {
-        const parsed = JSON.parse(line) as ReviewLogEntry;
-        if (typeof parsed.findingId === "string" && typeof parsed.reviewedAt === "string") {
-          entries.push(parsed);
-        }
-      } catch {
-        continue;
-      }
-    }
-    return entries;
+    return parseReviewLog(raw);
   } catch {
     return [];
   }

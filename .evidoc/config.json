@@ -3,6 +3,11 @@
     "README.md",
     "AGENTS.md",
     "CLAUDE.md",
+    "SECURITY.md",
+    "PRIVACY.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
     "docs"
   ],
   "ignorePatterns": [

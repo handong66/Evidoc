@@ -120,6 +120,21 @@ test("does not treat parent traversal references as existing outside the reposit
   assert.equal(finding?.evidence[0].subject, `../${outsideName}`);
 });
 
+test("resolves Markdown links relative to the document directory", async () => {
+  const root = await fixture();
+  await write(root, "README.md", "# Root documentation\n");
+  await write(root, "docs/guide.md", "[Back to the root README](../README.md)\n");
+
+  const report = await checkRepository(root);
+
+  assert.equal(
+    report.findings.some(
+      (finding) => finding.ruleId === "path.missing-reference" && finding.evidence[0]?.subject === "../README.md"
+    ),
+    false
+  );
+});
+
 test("does not treat symlinked paths that resolve outside the repository root as existing", async () => {
   const root = await fixture();
   const outside = await fixture();

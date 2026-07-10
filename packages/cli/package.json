@@ -1,6 +1,6 @@
 {
   "name": "@handong66/evidoc-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "prepublishOnly": "node ../../scripts/ensure-built-package.mjs"
@@ -10,17 +10,18 @@
   },
   "types": "./dist/src/index.d.ts",
   "files": [
-    "dist/src"
+    "dist/src",
+    "README.md",
+    "LICENSE"
   ],
   "dependencies": {
-    "@handong66/evidoc-core": "0.1.0",
-    "@handong66/evidoc-dashboard": "0.1.0",
-    "@handong66/evidoc-github-action": "0.1.0",
-    "@handong66/evidoc-graph": "0.1.0",
-    "@handong66/evidoc-local-app": "0.1.0",
-    "@handong66/evidoc-mcp-server": "0.1.0",
-    "@handong66/evidoc-patcher": "0.1.0",
-    "@handong66/evidoc-reports": "0.1.0"
+    "@handong66/evidoc-core": "0.2.0",
+    "@handong66/evidoc-dashboard": "0.2.0",
+    "@handong66/evidoc-github-action": "0.2.0",
+    "@handong66/evidoc-graph": "0.2.0",
+    "@handong66/evidoc-local-app": "0.2.0",
+    "@handong66/evidoc-patcher": "0.2.0",
+    "@handong66/evidoc-reports": "0.2.0"
   },
   "engines": {
     "node": ">=22"

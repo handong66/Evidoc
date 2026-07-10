@@ -2,15 +2,18 @@
 import { readFile } from "node:fs/promises";
 
 const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
+const manifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const lines = changelog.split(/\r?\n/);
-const headingIndex = lines.findIndex((line) => line.startsWith("## "));
+const headingIndex = lines.findIndex(
+  (line) => line === `## ${manifest.version}` || line.startsWith(`## ${manifest.version} - `)
+);
 const nextHeadingIndex =
   headingIndex < 0
     ? -1
     : lines.findIndex((line, index) => index > headingIndex && line.startsWith("## "));
 
 if (headingIndex < 0) {
-  console.error("No release notes found in CHANGELOG.md.");
+  console.error(`No release notes found for ${manifest.version} in CHANGELOG.md.`);
   process.exitCode = 1;
 } else {
   const title = lines[headingIndex].replace(/^##\s+/, "");

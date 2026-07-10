@@ -1,4 +1,5 @@
-import type { DriftReport, MultiRepositoryReport } from "@handong66/evidoc-core";
+import { basename } from "node:path";
+import type { AgentRuntimeContract, DriftReport, MultiRepositoryReport } from "@handong66/evidoc-core";
 import { buildDriftGraph } from "@handong66/evidoc-graph";
 
 export interface DashboardSnapshot {
@@ -20,6 +21,7 @@ export interface LocalAppRepositoryState {
   root: string;
   name: string;
   health: RepositoryHealth;
+  runtime: AgentRuntimeContract;
   ci: {
     enabled: boolean;
     workflowPath?: string;
@@ -93,7 +95,7 @@ export function renderDashboardHtml(report: DriftReport): string {
   const rows = snapshot.findings
     .map(
       (finding) => `
-        <tr>
+        <tr data-status="${escapeHtml(finding.status)}">
           <td><code>${escapeHtml(finding.status)}</code></td>
           <td>${escapeHtml(finding.severity)}</td>
           <td><code>${escapeHtml(finding.ruleId)}</code></td>
@@ -102,7 +104,7 @@ export function renderDashboardHtml(report: DriftReport): string {
           <td>${escapeHtml(sanitizeLocalAppPromptText(finding.suggestedAction, report.root))}</td>
           <td><button type="button" data-review-action data-finding-id="${escapeHtml(
             finding.id
-          )}">Record</button></td>
+          )}">Copy review id</button></td>
         </tr>`
     )
     .join("");
@@ -125,6 +127,7 @@ export function renderDashboardHtml(report: DriftReport): string {
     .metric span { display: block; margin-top: 6px; color: #4b5563; font-size: 13px; }
     .toolbar { display: flex; gap: 10px; margin: 0 0 16px; }
     .toolbar input, .toolbar select { min-height: 36px; border: 1px solid #9ca3af; border-radius: 6px; padding: 0 10px; background: #fff; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     table { width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; }
     th, td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; font-size: 14px; }
     th { background: #eef2f7; font-size: 12px; text-transform: uppercase; color: #374151; }
@@ -134,7 +137,7 @@ export function renderDashboardHtml(report: DriftReport): string {
 <body>
   <main>
     <h1>Evidoc Dashboard</h1>
-    <p class="meta">Repository: <code>${escapeHtml(report.root)}</code> · generated ${escapeHtml(
+    <p class="meta">Repository: <code>${escapeHtml(basename(report.root) || "repository")}</code> · generated ${escapeHtml(
       snapshot.generatedAt
     )}</p>
     <section class="metrics" aria-label="Summary">
@@ -145,7 +148,9 @@ export function renderDashboardHtml(report: DriftReport): string {
       <div class="metric"><strong>${snapshot.summary.reviewSuppressed}</strong><span>review suppressed</span></div>
     </section>
     <section class="toolbar" aria-label="Filters">
+      <label class="sr-only" for="finding-filter">Filter findings</label>
       <input id="finding-filter" type="search" placeholder="Filter findings">
+      <label class="sr-only" for="status-filter">Filter by status</label>
       <select id="status-filter">
         <option value="">All statuses</option>
         <option value="broken">Broken</option>
@@ -166,7 +171,7 @@ export function renderDashboardHtml(report: DriftReport): string {
       </thead>
       <tbody>${
         rows ||
-        '<tr><td colspan="6">No drift evidence found.</td><td><button type="button" data-review-action disabled>Record</button></td></tr>'
+        '<tr><td colspan="6">No drift evidence found.</td><td><button type="button" data-review-action disabled>Copy review id</button></td></tr>'
       }</tbody>
     </table>
     <p id="review-feedback" class="meta" role="status" aria-live="polite"></p>
@@ -174,12 +179,18 @@ export function renderDashboardHtml(report: DriftReport): string {
     <script id="trend-data" type="application/json">${escapeScriptJson(trend)}</script>
     <script>
       const filter = document.getElementById('finding-filter');
-      filter?.addEventListener('input', () => {
+      const statusFilter = document.getElementById('status-filter');
+      const applyFilters = () => {
         const query = filter.value.toLowerCase();
+        const status = statusFilter.value;
         for (const row of document.querySelectorAll('tbody tr')) {
-          row.hidden = query.length > 0 && !row.textContent.toLowerCase().includes(query);
+          const queryMismatch = query.length > 0 && !row.textContent.toLowerCase().includes(query);
+          const statusMismatch = status.length > 0 && row.dataset.status !== status;
+          row.hidden = queryMismatch || statusMismatch;
         }
-      });
+      };
+      filter?.addEventListener('input', applyFilters);
+      statusFilter?.addEventListener('change', applyFilters);
       const reviewFeedback = document.getElementById('review-feedback');
       for (const button of document.querySelectorAll('[data-review-action]')) {
         button.addEventListener('click', async () => {
@@ -205,7 +216,7 @@ export function renderMultiRepositoryDashboardHtml(report: MultiRepositoryReport
     .map(
       (repository) => `
         <tr>
-          <td><code>${escapeHtml(repository.root)}</code></td>
+          <td><code>${escapeHtml(basename(repository.root) || "repository")}</code></td>
           <td>${repository.summary.documentsScanned}</td>
           <td>${repository.summary.findings}</td>
           <td>${repository.summary.broken}</td>
@@ -620,7 +631,7 @@ export function renderLocalAppHtml(state: LocalAppDashboardState): string {
   <main class="workspace-shell" data-workspace-shell>
     <aside class="workspace-rail">
       <header class="brand">
-        <span class="brand-mark" aria-hidden="true">DG</span>
+        <span class="brand-mark" aria-hidden="true">EV</span>
         <div>
           <h1>Evidoc</h1>
           <p class="eyebrow">${tx("Evidoc Command Center", "Evidoc 舰桥控制台")}</p>
@@ -688,6 +699,7 @@ export function renderLocalAppHtml(state: LocalAppDashboardState): string {
       updated: { en: 'Updated. Reloading...', zh: '已更新，正在刷新...' },
       scaffoldComplete: { en: 'Agent setup complete', zh: 'Agent 接入完成' },
       scaffoldNoFiles: { en: 'no setup files were reported. Reloading...', zh: '没有返回接入文件结果。正在刷新...' },
+      safeFixComplete: { en: 'Safe fixes applied', zh: '安全修复已应用' },
       promptCopied: { en: 'Agent prompt copied.', zh: 'Agent 提示词已复制。' },
       promptCopyFailed: { en: 'Could not copy. Select the prompt text manually.', zh: '无法复制，请手动选择提示词文本。' },
       emptyRepositoryPath: { en: 'Enter or choose a repository folder first.', zh: '请先输入或选择仓库文件夹。' },
@@ -889,6 +901,18 @@ export function renderLocalAppHtml(state: LocalAppDashboardState): string {
         postJson('/api/enable-local-git', { root }, { selectedRoot: root });
       });
     }
+    for (const button of document.querySelectorAll('[data-apply-safe-fixes]')) {
+      button.addEventListener('click', () => {
+        const root = button.getAttribute('data-apply-safe-fixes');
+        postJson('/api/fix-safe', { root }, {
+          selectedRoot: root,
+          successMessage: (payload) => {
+            const applied = Array.isArray(payload?.result?.applied) ? payload.result.applied.length : 0;
+            return t('safeFixComplete') + ': ' + applied;
+          }
+        });
+      });
+    }
     for (const button of document.querySelectorAll('[data-scaffold]')) {
       button.addEventListener('click', () => {
         const root = button.getAttribute('data-scaffold-root');
@@ -1053,6 +1077,14 @@ function renderRepositoryPanel(repository: LocalAppRepositoryState, index: numbe
         </div>
         <div class="actions">
           <button type="button" class="primary" data-rescan="${escapeHtml(repository.root)}">${tx("Re-scan", "重新扫描")}</button>
+          ${
+            safeAutoFixes > 0
+              ? `<button type="button" data-apply-safe-fixes="${escapeHtml(repository.root)}">${tx(
+                  `Apply ${safeAutoFixes} safe fix${safeAutoFixes === 1 ? "" : "es"}`,
+                  `应用 ${safeAutoFixes} 个安全修复`
+                )}</button>`
+              : ""
+          }
           ${
             repository.ci.enabled
               ? ciWarnings.length > 0

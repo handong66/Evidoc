@@ -43,7 +43,6 @@ export interface EvidocConfig {
   requireTestsForSources?: boolean;
   requireDocsForChangedSources?: boolean;
   maxFileBytes?: number;
-  concurrency?: number;
 }
 
 export interface RepositorySnapshot {
@@ -120,7 +119,14 @@ export interface DriftReport {
   summary: DriftSummary;
 }
 
-export type AgentRuntimeEvent = "pre-commit" | "pre-push" | "manual" | "mcp" | "ide";
+export type AgentRuntimeEvent =
+  | "pre-commit"
+  | "pre-push"
+  | "manual"
+  | "mcp"
+  | "ide"
+  | "github_action"
+  | "local_app";
 export type AgentRuntimeMode = "advisory" | "blocking";
 export type AgentRuntimeScope = "staged" | "worktree" | "full_repository";
 export type AgentRuntimeStatus = "passed" | "review_needed" | "failed";

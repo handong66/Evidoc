@@ -28,7 +28,7 @@ The package name is `repo-evidoc`; the executable command installed by the packa
 
 ## What Gets Written
 
-- `check`, `doctor`, `diagnose`, `verify`, `recipes`, and `agent-eval` are read-only scans or generators unless redirected by the shell.
+- `check`, `doctor`, `diagnose`, `verify`, and `recipes` are read-only scans or generators unless redirected by the shell. `agent-eval` is an experimental maintainer-only benchmark-pack generator; it does not run agents.
 - `app` and bare `npx repo-evidoc` may create `.evidoc/config.json` and `.evidoc/.gitignore` so local scan history stays out of commits.
 - `init --yes` writes `.evidoc/config.json`, `.evidoc/.gitignore`, and either a GitHub Actions workflow or local hooks.
 - `fix --safe --write --json` writes only deterministic safe fixes and requires the explicit `--safe` flag.
@@ -122,8 +122,8 @@ jobs:
   evidoc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: handong66/Evidoc/packages/github-action@main
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: handong66/Evidoc/packages/github-action@v0.2.0
         with:
           fail-on: review_needed
           sarif: "false"
@@ -206,7 +206,7 @@ npx repo-evidoc app
 npx repo-evidoc serve --root . --root ../another-repo
 ```
 
-The app can scan configured local repositories, display per-repository red/yellow/green status, show evidence for each finding, open the relevant file, watch and refresh scan state, and scaffold agent support files.
+The app can scan configured local repositories, display per-repository red/yellow/green status, show evidence for each finding, open the relevant file, watch and refresh scan state, apply explicitly selected deterministic safe fixes, and scaffold agent support files. Findings without a safe proposal remain review-only.
 It also shows current branch, local baseline, hook readiness, staged and unstaged changed files, affected docs, the latest local gate result with gate baseline, baseline commit, runtime status, fingerprint, and freshness, local gate issues, and a one-click Local Git Gate enable action.
 The GitHub Action generator remains available but is no longer the only gate entry. The CI status also recognizes hand-written workflows that call Evidoc through direct source-checkout commands or through repository-local composite action entrypoints.
 The UI has English and Chinese language modes.
@@ -228,7 +228,9 @@ Scaffold actions report how many support files were created, updated, or already
 
 Repository roots added to the app must resolve to existing real directories and are stored by canonical real path. Startup fails with a clear missing-root error instead of opening an empty dashboard when a supplied root is wrong.
 
-Write-capable app endpoints only operate on those added roots, and generated config, workflow, history, and scaffold files must pass repository-bound writable path checks. File-opening requests must point to an existing real path inside an added repository; path traversal and symlink escapes are rejected. The local server rejects cross-origin browser POSTs, caps JSON request bodies, and returns security headers on HTML, JSON, SVG, and event-stream responses.
+Write-capable app endpoints only operate on added roots. Generated config, workflow, history, safe-fix targets, and scaffold files must pass repository-bound writable path checks.
+File-opening requests must point to an existing real path inside an added repository; path traversal and symlink escapes are rejected.
+The server binds only to `127.0.0.1`, `localhost`, or `::1`, requires the exact listening authority on every request, rejects cross-origin browser POSTs, caps JSON request bodies, and returns security headers on HTML, JSON, SVG, and event-stream responses.
 
 For automation or tests, use:
 
@@ -271,7 +273,6 @@ npx repo-evidoc diagnose
 npx repo-evidoc guard --event pre-commit --fail-on=review_needed
 npx repo-evidoc guard --event pre-push --since merge-base:main --fail-on=review_needed
 npx repo-evidoc verify --instructions --json
-npx repo-evidoc agent-eval --json
 npx repo-evidoc recipes --target all
 npx repo-evidoc draft --json > /tmp/evidoc-proposals.json
 npx repo-evidoc validate --proposal /tmp/evidoc-proposals.json --json
@@ -283,14 +284,14 @@ npx repo-evidoc fix --safe --write --json
 The current safe writer covers review-needed documented commands and agent `packageManager` fields backed by package-manager evidence. Broken, review, and blocked findings stay human-reviewed. `fix --safe --write --json` includes a `postFixSummary` so the remaining findings are visible immediately after deterministic fixes.
 `draft --json` emits the full proposal array, and `validate --proposal` accepts the full generated file directly, so the repair plan can be checked without manually extracting a single proposal.
 `verify --instructions` is the focused agent-guidance check for AGENTS.md, CLAUDE.md, Cursor rules, and GitHub Copilot instructions. It still sees those files when they were added after `init` and are not listed in `docRoots`.
-`agent-eval --json` emits a local benchmark pack for Codex, Claude Code, and OpenCode A/B runs. The pack includes the current coverage baseline, the default MCP entrypoint, read-parity repair tasks, safe-fix criteria, and privacy notes. It redacts the local repository root and does not call external agent providers or upload repository content.
+The experimental maintainer command `agent-eval --json` emits only a local benchmark specification for manual Codex, Claude Code, or OpenCode A/B runs. It does not execute an A/B run, score an agent, call an external provider, or upload repository content.
 
 For MCP-enabled agents, start repair work with `evidoc.agent_scan`.
 It is the default read-only MCP entrypoint and returns one fresh scan bundle with the Agent Runtime Contract, `freshness`, `partial`, affected documents, evidence categories, patch classifications, next commands, and the privacy contract.
 Before answering only whether docs drifted, use `evidoc.get_drift_status` when it is listed.
 Before proposing repairs, use `evidoc.diagnose_drift` when it is listed.
 Use `evidoc.suggest_doc_fix` for evidence-bound proposal data when available.
-These tools share the same core scan and runtime fingerprint contract.
+These tools share the same core scan and finding fingerprints. Their aggregate runtime fingerprints can differ when event, mode, scope, baseline, or changed-file context differs.
 
 ## Pull Request Diff Loop
 
@@ -350,7 +351,7 @@ If no Evidoc runtime is available, the hooks print a warning and skip instead of
 The generated workflow uses the full low-permission workflow shown in GitHub Action CI Setup. Its Evidoc step uses:
 
 ```yaml
-- uses: handong66/Evidoc/packages/github-action@main
+- uses: handong66/Evidoc/packages/github-action@v0.2.0
   with:
     fail-on: review_needed
     sarif: "false"

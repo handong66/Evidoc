@@ -5,6 +5,9 @@
     "rootDir": ".",
     "outDir": "dist"
   },
+  "references": [
+    { "path": "../core" }
+  ],
   "include": [
     "src/**/*.ts",
     "test/**/*.ts"

@@ -8,8 +8,7 @@
   "references": [
     { "path": "../core" },
     { "path": "../patcher" },
-    { "path": "../reports" },
-    { "path": "../review-log" }
+    { "path": "../reports" }
   ],
   "include": [
     "src/**/*.ts",

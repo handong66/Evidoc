@@ -5,8 +5,9 @@ Evidoc publishes npm package tarballs and publishes registry packages through np
 ## Preconditions
 
 ```bash
-npm install
+npm ci
 npm test
+npm run release:verify -- --tag v0.2.0
 npm run release:smoke:npx
 npm run evidoc -- --fail-on=review_needed
 npm whoami
@@ -70,35 +71,37 @@ done
 npm publish ./packages/core --dry-run --access public
 ```
 
-All public package manifests whitelist `dist/src` through `files`, so release tarballs contain runtime build output instead of source files, tests, or TypeScript build metadata.
+All public package manifests whitelist `dist/src`, `README.md`, and `LICENSE` through `files`, so release tarballs contain runtime output and the minimum package identity/legal files, but not source tests or TypeScript build metadata. The npx smoke test inspects every tarball for those files before installation.
+Release verification also checks the exact 12 public package directories and names before the wildcard pack step, so adding a workspace package cannot silently add a new public artifact.
 
 ## Release Artifact Workflow
 
-The `Release Artifacts` GitHub Actions workflow runs on `v*` tags and manual dispatch. It:
+The `Release Artifacts` GitHub Actions workflow runs on `v*` tags and manual dispatch. Manual runs build and smoke-test artifacts only; npm publishing and GitHub Release creation require an exact version tag. It:
 
 1. installs with `npm ci`;
-2. builds and tests all workspace packages;
-3. creates one npm tarball per package with explicit local `npm pack "./$package"` paths;
-4. runs `npm run release:smoke:npx -- .evidoc/release`, which installs the local tarballs into temporary repositories and verifies the published `npx repo-evidoc` path across `app --once --json --no-open`, `doctor`, `init --yes`, `check --fail-on=review_needed`, `diagnose`, `fix --safe --json`, `fix --safe --write --json`, and `demo --once --json --no-open`;
-5. uploads tarballs as workflow artifacts;
-6. attaches tarballs to a GitHub Release when the run is tag-triggered;
-7. optionally publishes all public workspace packages: `repo-evidoc`, `@handong66/evidoc-cli`, `@handong66/evidoc-core`, `@handong66/evidoc-dashboard`, `@handong66/evidoc-frontmatter`, `@handong66/evidoc-github-action`, `@handong66/evidoc-graph`, `@handong66/evidoc-local-app`, `@handong66/evidoc-mcp-server`, `@handong66/evidoc-patcher`, `@handong66/evidoc-reports`, and `@handong66/evidoc-review-log`.
+2. verifies that the root, all workspace manifests, exact internal dependency pins, runtime version, and tag use one version;
+3. builds and tests all workspace packages;
+4. creates one npm tarball per package with explicit local `npm pack "./$package"` paths;
+5. runs `npm run release:smoke:npx -- .evidoc/release`, which checks tarball identity files, installs the local tarballs into temporary repositories, and verifies the published `npx repo-evidoc` path across `app --once --json --no-open`, `doctor`, `init --yes`, `check --fail-on=review_needed`, `diagnose`, `fix --safe --json`, `fix --safe --write --json`, and `demo --once --json --no-open`;
+6. uploads tarballs as workflow artifacts;
+7. preflights every intended npm name/version and refuses to start publishing if any one is already present, then publishes the packages in dependency order;
+8. attaches tarballs to a GitHub Release only after tag-triggered npm publishing succeeds, so a failed registry release does not create a green-looking GitHub Release first.
 
 ## Versioning
 
 Until the project has external users, package versions can stay synchronized. A release tag should use:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
-The generated onboarding workflow references `handong66/Evidoc/packages/github-action@main` so a public repository can still adopt the CI path without a release tag.
+The generated onboarding workflow references the exact matching tag, `handong66/Evidoc/packages/github-action@v0.2.0`. Do not merge or advertise that generated workflow until the tag exists in the public repository.
 
 After the first public release, maintainers can document a pinned release path and move the floating major tag after the exact release tag is pushed:
 
 ```bash
-git tag -f v0 v0.1.0
+git tag -f v0 v0.2.0
 git push origin -f v0
 ```
 

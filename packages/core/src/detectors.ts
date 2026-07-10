@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 import ts from "typescript";
+import { parseDocumentFrontmatter } from "./frontmatter.js";
 import { pathExists } from "./repository.js";
 import type { DriftFinding, RepositorySnapshot } from "./types.js";
 
@@ -194,7 +195,7 @@ async function detectAgentInstructionMissingPaths(
 
   for (const doc of agentDocs) {
     for (const reference of extractPathReferences(doc.text)) {
-      const candidate = normalizeCandidatePath(reference.path);
+      const candidate = resolveDocumentReferencePath(doc.path, reference);
       if (!candidate || seen.has(`${doc.path}:${candidate}:${reference.line}`)) continue;
       seen.add(`${doc.path}:${candidate}:${reference.line}`);
       if (snapshot.files.has(candidate) || (await pathExists(snapshot.root, candidate))) continue;
@@ -309,7 +310,7 @@ async function detectMissingPaths(
   const seen = new Set<string>();
 
   for (const reference of extractPathReferences(text)) {
-    const candidate = normalizeCandidatePath(reference.path);
+    const candidate = resolveDocumentReferencePath(docPath, reference);
     if (!candidate || seen.has(`${candidate}:${reference.line}`)) continue;
     seen.add(`${candidate}:${reference.line}`);
 
@@ -684,25 +685,37 @@ function isPackageManagerCompatible(manager: DocumentedPackageManager, expected:
   return manager === "npx" && expected === "npm";
 }
 
-function extractPathReferences(text: string): Array<{ line: number; path: string }> {
-  const results: Array<{ line: number; path: string }> = [];
+type PathReference = { line: number; path: string; kind: "markdown_link" | "code_path" };
+
+function extractPathReferences(text: string): PathReference[] {
+  const results: PathReference[] = [];
   const markdownLinkRegex = /\[[^\]]*]\((?!https?:|mailto:|#)([^)\s#]+)(?:#[^)]+)?\)/g;
   const pathRegex =
     /(?:^|[\s`"'])((?:\.{1,2}\/)?[A-Za-z0-9_.@/-]+\.(?:ts|tsx|js|jsx|mjs|cjs|json|ya?ml|mdx?|py|go|rs|java|rb|php|cs|sh|toml|sql|proto|graphql|gql|lock))(?:$|[\s`"',;:)])/g;
 
   for (const [index, line] of lines(text)) {
     for (const match of line.matchAll(markdownLinkRegex)) {
-      results.push({ line: index, path: match[1] });
+      results.push({ line: index, path: match[1], kind: "markdown_link" });
     }
   }
 
   for (const snippet of codeSnippets(text)) {
     for (const match of snippet.text.matchAll(pathRegex)) {
-      results.push({ line: snippet.line, path: match[1] });
+      results.push({ line: snippet.line, path: match[1], kind: "code_path" });
     }
   }
 
   return results;
+}
+
+function resolveDocumentReferencePath(docPath: string, reference: PathReference): string | undefined {
+  const candidate = normalizeCandidatePath(reference.path);
+  if (!candidate || reference.kind !== "markdown_link") return candidate;
+  const resolved = posix.normalize(posix.join(posix.dirname(docPath), candidate));
+  if (!resolved || resolved === "." || resolved === ".." || resolved.startsWith("../")) {
+    return candidate;
+  }
+  return resolved;
 }
 
 function extractApiReferences(text: string): Array<{ line: number; method: string; path: string }> {
@@ -899,72 +912,20 @@ function declarationName(node: ts.Node): string | undefined {
   return undefined;
 }
 
-interface ParsedFrontmatter {
+function parseFrontmatter(text: string): {
   lastReviewed?: string;
   lastReviewedLine: number;
   ttlDays?: number;
   sources: Array<{ path: string; line: number; symbols: string[] }>;
-}
-
-function parseFrontmatter(text: string): ParsedFrontmatter | undefined {
-  const allLines = text.split(/\r?\n/);
-  if (allLines[0]?.trim() !== "---") return undefined;
-  const end = allLines.findIndex((line, index) => index > 0 && line.trim() === "---");
-  if (end < 0) return undefined;
-
-  const parsed: ParsedFrontmatter = {
-    lastReviewedLine: 1,
-    sources: []
+} | undefined {
+  const parsed = parseDocumentFrontmatter(text);
+  if (!parsed.hasFrontmatter) return undefined;
+  return {
+    lastReviewed: parsed.frontmatter.lastReviewed,
+    lastReviewedLine: parsed.locations.lastReviewedLine,
+    ttlDays: parsed.frontmatter.ttlDays,
+    sources: parsed.locations.sources
   };
-  let currentSource: { path: string; line: number; symbols: string[] } | undefined;
-  let inSymbols = false;
-
-  for (let index = 1; index < end; index += 1) {
-    const line = allLines[index] ?? "";
-    const lineNumber = index + 1;
-    const trimmed = line.trim();
-
-    if (trimmed.startsWith("- path:")) {
-      currentSource = {
-        path: trimmed.slice("- path:".length).trim(),
-        line: lineNumber,
-        symbols: []
-      };
-      parsed.sources.push(currentSource);
-      inSymbols = false;
-      continue;
-    }
-
-    if (trimmed === "symbols:") {
-      inSymbols = true;
-      continue;
-    }
-
-    if (inSymbols && trimmed.startsWith("- ") && currentSource) {
-      currentSource.symbols.push(trimmed.slice(2).trim());
-      continue;
-    }
-
-    if (trimmed.startsWith("lastReviewed:")) {
-      parsed.lastReviewed = trimmed.slice("lastReviewed:".length).trim();
-      parsed.lastReviewedLine = lineNumber;
-      inSymbols = false;
-      continue;
-    }
-
-    if (trimmed.startsWith("ttlDays:")) {
-      const value = Number.parseInt(trimmed.slice("ttlDays:".length).trim(), 10);
-      if (Number.isFinite(value)) parsed.ttlDays = value;
-      inSymbols = false;
-      continue;
-    }
-
-    if (trimmed && !line.startsWith(" ")) {
-      inSymbols = false;
-    }
-  }
-
-  return parsed;
 }
 
 function hasTestCoverage(snapshot: RepositorySnapshot, sourcePath: string): boolean {

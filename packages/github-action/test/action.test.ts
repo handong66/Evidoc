@@ -36,10 +36,10 @@ test("fails on any finding when policy is review_needed", () => {
   assert.equal(shouldFailAction(report(0, 1), { failOn: "review_needed" }), true);
 });
 
-test("parses missing or invalid action fail-on input as review-needed gating", () => {
+test("defaults missing action fail-on input and rejects invalid policies", () => {
   assert.equal(parseFailOn(undefined), "review_needed");
   assert.equal(parseFailOn(""), "review_needed");
-  assert.equal(parseFailOn("invalid"), "review_needed");
+  assert.throws(() => parseFailOn("invalid"), /Invalid fail-on policy/);
   assert.equal(parseFailOn("broken"), "broken");
   assert.equal(parseFailOn("review_needed"), "review_needed");
   assert.equal(parseFailOn("none"), "none");

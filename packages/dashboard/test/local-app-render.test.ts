@@ -3,6 +3,23 @@ import assert from "node:assert/strict";
 import { runInNewContext } from "node:vm";
 import { renderLocalAppHtml, type LocalAppDashboardState } from "../src/index.js";
 
+function runtime(status: "passed" | "review_needed" | "failed") {
+  return {
+    schemaVersion: "evidoc.agent-runtime.v1" as const,
+    source: "evidoc" as const,
+    event: "local_app" as const,
+    mode: "advisory" as const,
+    scope: "full_repository" as const,
+    status,
+    fingerprint: `dgr_${status}`,
+    generatedAt: "2026-07-05T00:00:00.000Z",
+    scannedAt: "2026-07-05T00:00:00.000Z",
+    summary: { findings: 0, broken: 0, reviewNeeded: 0 },
+    findings: [],
+    dedupe: { strategy: "runtime.findings[].fingerprint" as const, fingerprintCount: 0 }
+  };
+}
+
 test("renders a local app dashboard for repository health and actions", () => {
   const state: LocalAppDashboardState = {
     generatedAt: "2026-07-05T00:00:00.000Z",
@@ -19,6 +36,7 @@ test("renders a local app dashboard for repository health and actions", () => {
         root: "/repo/clean",
         name: "clean",
         health: "ok",
+        runtime: runtime("passed"),
         ci: { enabled: true, workflowPath: ".github/workflows/evidoc.yml" },
         localGit: {
           isRepository: true,
@@ -70,6 +88,7 @@ test("renders a local app dashboard for repository health and actions", () => {
         root: "/repo/broken",
         name: "broken",
         health: "broken",
+        runtime: runtime("failed"),
         ci: { enabled: false },
         history: [{ scannedAt: "2026-07-05T00:00:00.000Z", findings: 1, broken: 1, reviewNeeded: 0 }],
         report: {
@@ -114,18 +133,41 @@ test("renders a local app dashboard for repository health and actions", () => {
                 }
               ],
               suggestedAction: "Update the symbol binding."
+            },
+            {
+              id: "finding-3",
+              ruleId: "command.package-manager-mismatch",
+              severity: "medium",
+              status: "review_needed",
+              docPath: "README.md",
+              line: 3,
+              message: "README.md:3 uses npm, but this repository is configured for pnpm.",
+              evidence: [
+                {
+                  kind: "command",
+                  subject: "npm test",
+                  expected: "pnpm",
+                  actual: "npm",
+                  detail: "The documented package manager differs from repository evidence."
+                }
+              ],
+              suggestedAction: "Update the documented command to pnpm."
             }
           ],
           summary: {
             documentsScanned: 1,
-            findings: 2,
+            findings: 3,
             broken: 2,
-            reviewNeeded: 0,
+            reviewNeeded: 1,
             reviewSuppressed: 0,
             skippedOversized: 0,
             healthScore: 75,
-            byRule: { "path.missing-reference": 1, "symbol.missing-reference": 1 },
-            bySeverity: { low: 0, medium: 0, high: 1 }
+            byRule: {
+              "path.missing-reference": 1,
+              "symbol.missing-reference": 1,
+              "command.package-manager-mismatch": 1
+            },
+            bySeverity: { low: 0, medium: 1, high: 2 }
           }
         }
       }
@@ -151,6 +193,7 @@ test("renders a local app dashboard for repository health and actions", () => {
   assert.match(html, /data-repository-root="\/repo\/clean" data-active="true"/);
   assert.match(html, /data-repository-root="\/repo\/broken" hidden/);
   assert.match(html, /data-rescan="\/repo\/broken"/);
+  assert.match(html, /data-apply-safe-fixes/);
   assert.match(html, /aria-current="true"/);
   assert.match(html, /path\.missing-reference/);
   assert.match(html, /Rule distribution/);
@@ -193,8 +236,8 @@ test("renders a local app dashboard for repository health and actions", () => {
   assert.match(html, /Copy repository prompt/);
   assert.match(html, /复制仓库提示词/);
   assert.match(html, /Please fix all Evidoc findings in the current repository/);
-  assert.match(html, /Finding 1 of 2/);
-  assert.match(html, /Finding 2 of 2/);
+  assert.match(html, /Finding 1 of 3/);
+  assert.match(html, /Finding 2 of 3/);
   assert.match(html, /Location: README\.md:1/);
   assert.match(html, /Location: README\.md:2/);
   assert.match(html, /Evidence: README\.md:2 references missing symbol &lt;target-repository-root&gt;\/src\/service\.js#listMembers/);
@@ -254,6 +297,7 @@ test("renders the local app as a polished repository command center", () => {
         root: "/repo/app",
         name: "app",
         health: "review_needed",
+        runtime: runtime("review_needed"),
         ci: { enabled: false },
         history: [{ scannedAt: "2026-07-05T00:00:00.000Z", findings: 1, broken: 0, reviewNeeded: 1 }],
         report: {
@@ -300,6 +344,8 @@ test("renders the local app as a polished repository command center", () => {
   const html = renderLocalAppHtml(state);
 
   assert.match(html, /Evidoc Command Center/);
+  assert.match(html, />EV<\/span>/);
+  assert.doesNotMatch(html, />DG<\/span>/);
   assert.match(html, /舰桥控制台/);
   assert.match(html, /data-workspace-shell/);
   assert.match(html, /data-fleet-strip/);
@@ -352,6 +398,7 @@ test("renders local app CI warnings near repository actions", () => {
         root: "/repo",
         name: "repo",
         health: "ok",
+        runtime: runtime("passed"),
         ci: {
           enabled: true,
           workflowPath: ".github/workflows/evidoc.yml",
@@ -403,6 +450,7 @@ test("escapes local app dashboard data before rendering HTML", () => {
         root: "/repo/<script>alert(1)</script>",
         name: "<script>alert(1)</script>",
         health: "broken",
+        runtime: runtime("failed"),
         ci: { enabled: false },
         history: [],
         report: {
@@ -468,6 +516,7 @@ test("renders local app prompts with safe repair modes and sanitized untrusted f
         root: "/repo/app",
         name: "app",
         health: "broken",
+        runtime: runtime("failed"),
         ci: { enabled: false },
         history: [],
         report: {

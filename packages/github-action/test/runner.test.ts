@@ -26,6 +26,10 @@ test("runs a real action scan and applies fail policy", async () => {
 
   assert.equal(result.exitCode, 1);
   assert.equal(result.report.summary.broken, 1);
+  assert.equal(result.runtime.schemaVersion, "evidoc.agent-runtime.v1");
+  assert.equal(result.runtime.event, "github_action");
+  assert.equal(result.runtime.mode, "blocking");
+  assert.equal(result.runtime.summary.broken, result.report.summary.broken);
   assert.match(result.markdownSummary, /Evidoc Report/);
 });
 

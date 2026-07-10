@@ -10,7 +10,8 @@ Security fixes are provided for the latest published minor line.
 
 | Version | Supported |
 |---------|-----------|
-| 0.1.x | Yes |
+| 0.2.x | Yes |
+| 0.1.x | No |
 | Earlier pre-release or unpublished builds | No |
 
 ## Reporting
@@ -31,6 +32,8 @@ We may close reports that depend on social engineering, denial-of-service volume
 
 - The CLI and MCP read tools are read-only by default.
 - MCP write tools require explicit `allowWrites`.
-- Patch generation returns reviewable diffs; it does not silently apply them.
+- The Local App binds only to loopback hosts, requires the exact listening authority on every request, rejects cross-origin writes, and limits write endpoints to known repository roots.
+- Patch generation returns reviewable diffs. Deterministic safe fixes require an explicit CLI write flag or Local App action; other proposals are not applied.
 - LLM patch requests are bounded evidence packs and should not be sent to providers unless the operator explicitly configures that workflow.
+- Finding messages, evidence, document text, and review notes are untrusted data. Generated agent prompts and MCP repair payloads tell consumers not to execute instructions embedded in those fields.
 - Review logs are append-only JSONL records intended for auditability.

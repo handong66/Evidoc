@@ -2,11 +2,6 @@ name: Release Artifacts
 
 on:
   workflow_dispatch:
-    inputs:
-      publish:
-        description: Publish packages to npm.
-        required: false
-        default: "false"
   push:
     tags:
       - "v*"
@@ -21,9 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
           cache: npm
@@ -32,6 +27,8 @@ jobs:
         run: npm install -g npm@11.18.0
       - name: Install dependencies
         run: npm ci
+      - name: Verify release version contract
+        run: npm run release:verify
       - name: Build and test
         run: npm test
       - name: Create npm package tarballs
@@ -46,41 +43,56 @@ jobs:
       - name: Smoke test npx package
         run: npm run release:smoke:npx -- .evidoc/release
       - name: Upload package artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: evidoc-packages
           path: .evidoc/release/*.tgz
       - name: Generate release notes
         run: npm run release:notes > .evidoc/release/RELEASE_NOTES.md
+      - name: Publish packages to npm
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          package_dirs=(
+            packages/core
+            packages/reports
+            packages/graph
+            packages/frontmatter
+            packages/dashboard
+            packages/local-app
+            packages/review-log
+            packages/patcher
+            packages/mcp-server
+            packages/github-action
+            packages/cli
+            packages/evidoc
+          )
+
+          for package_dir in "${package_dirs[@]}"; do
+            name="$(node -e "console.log(require('./${package_dir}/package.json').name)")"
+            version="$(node -e "console.log(require('./${package_dir}/package.json').version)")"
+            if registry_output="$(npm view "${name}@${version}" version --json 2>&1)"; then
+              echo "Refusing partial release: ${name}@${version} is already published." >&2
+              exit 1
+            fi
+            if ! grep -q 'E404' <<< "$registry_output"; then
+              echo "Unable to verify registry state for ${name}@${version}; refusing to publish." >&2
+              echo "$registry_output" >&2
+              exit 1
+            fi
+          done
+
+          for package_dir in "${package_dirs[@]}"; do
+            tarball_name="$(node -e "const p=require('./${package_dir}/package.json'); process.stdout.write(p.name.replace(/^@/, '').replace('/', '-') + '-' + p.version + '.tgz')")"
+            tarball=".evidoc/release/${tarball_name}"
+            if [ ! -f "$tarball" ]; then
+              echo "Verified package artifact is missing: $tarball" >&2
+              exit 1
+            fi
+            npm publish "$tarball" --access public
+          done
       - name: Attach artifacts to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: .evidoc/release/*.tgz
           body_path: .evidoc/release/RELEASE_NOTES.md
-      - name: Publish packages to npm
-        if: ${{ startsWith(github.ref, 'refs/tags/') || github.event.inputs.publish == 'true' }}
-        run: |
-          publish_package() {
-            package_dir="$1"
-            name="$(node -e "console.log(require('./${package_dir}/package.json').name)")"
-            version="$(node -e "console.log(require('./${package_dir}/package.json').version)")"
-            if npm view "${name}@${version}" version >/dev/null 2>&1; then
-              echo "Skipping ${name}@${version}; already published."
-            else
-              npm publish "./${package_dir}" --access public
-            fi
-          }
-
-          publish_package packages/core
-          publish_package packages/reports
-          publish_package packages/graph
-          publish_package packages/frontmatter
-          publish_package packages/dashboard
-          publish_package packages/local-app
-          publish_package packages/review-log
-          publish_package packages/patcher
-          publish_package packages/mcp-server
-          publish_package packages/github-action
-          publish_package packages/cli
-          publish_package packages/evidoc

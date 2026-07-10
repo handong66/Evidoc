@@ -3,6 +3,7 @@
 Most users do not need to edit this file before a first scan. Read this page when `doctor` says config is stale, when no documents are scanned, or when you want to narrow/expand what Evidoc checks.
 
 Evidoc reads `.evidoc/config.json` from the repository root. The file is optional; defaults are intentionally conservative and scan Markdown control surfaces in the repository.
+If the file exists but is malformed, unreadable, or contains an invalid field type, scans and `doctor` fail closed with a configuration error instead of silently replacing it with defaults.
 
 `npx repo-evidoc` and `npx repo-evidoc init --yes` also maintain `.evidoc/.gitignore` with `history.jsonl` and `reports/` so local Command Center scan history and Local Git Gate reports stay out of commits. Commit the config and `.evidoc/.gitignore`; leave generated history and reports local.
 
