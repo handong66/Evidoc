@@ -1,4 +1,4 @@
-# @handong66/evidoc-github-action
+# @evidoc/github-action
 
 The GitHub Action adapter for Evidoc. It delegates scanning and policy decisions to the shared core analyzer.
 

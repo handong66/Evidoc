@@ -1,4 +1,4 @@
-# @handong66/evidoc-mcp-server
+# @evidoc/mcp-server
 
 The Evidoc MCP server. Read tools are repository-local by default; review-log writes require explicit write permission.
 

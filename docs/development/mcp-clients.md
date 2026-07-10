@@ -1,9 +1,9 @@
 # MCP Clients
 
-Evidoc ships an MCP server through `@handong66/evidoc-mcp-server`.
+Evidoc ships an MCP server through `@evidoc/mcp-server`.
 
 ```bash
-npx -p @handong66/evidoc-mcp-server repo-evidoc-mcp
+npx -p @evidoc/mcp-server evidoc-mcp
 ```
 
 The server exposes `evidoc.agent_scan` as the default read-only repair entrypoint, `evidoc.get_drift_status` as the status entrypoint, and `evidoc.diagnose_drift` / `evidoc.suggest_doc_fix` for focused repair context.
@@ -35,7 +35,7 @@ Review-log writes are append-only and pass the same realpath/symlink boundary ch
   "mcpServers": {
     "evidoc": {
       "command": "npx",
-      "args": ["-p", "@handong66/evidoc-mcp-server", "repo-evidoc-mcp"],
+      "args": ["-p", "@evidoc/mcp-server", "evidoc-mcp"],
       "cwd": "/path/to/repository",
       "env": {
         "EVIDOC_ROOT": "/path/to/repository"
@@ -47,21 +47,21 @@ Review-log writes are append-only and pass the same realpath/symlink boundary ch
 
 ## Codex
 
-Use a local MCP server entry that runs `npx -p @handong66/evidoc-mcp-server repo-evidoc-mcp` with the target repository or workspace parent as `cwd`. Keep write tools disabled unless the thread explicitly needs to append a review-log decision.
+Use a local MCP server entry that runs `npx -p @evidoc/mcp-server evidoc-mcp` with the target repository or workspace parent as `cwd`. Keep write tools disabled unless the thread explicitly needs to append a review-log decision.
 
 ## Cursor
 
-Register a custom MCP server with command `npx`, arguments `-p`, `@handong66/evidoc-mcp-server`, and `repo-evidoc-mcp`, with the workspace root as the working directory.
+Register a custom MCP server with command `npx`, arguments `-p`, `@evidoc/mcp-server`, and `evidoc-mcp`, with the workspace root as the working directory.
 
 ## OpenCode
 
 Run Evidoc through the CLI when OpenCode needs deterministic evidence:
 
 ```bash
-npx repo-evidoc check --json
-npx repo-evidoc agent-eval --json
-npx repo-evidoc graph --json
-npx repo-evidoc draft --json
+npx evidoc check --json
+npx evidoc agent-eval --json
+npx evidoc graph --json
+npx evidoc draft --json
 ```
 
 Use the MCP server when the OpenCode environment supports MCP tool registration. Codex remains responsible for verifying any OpenCode recommendation against repository files and test output.

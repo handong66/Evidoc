@@ -1,4 +1,4 @@
-# @handong66/evidoc-graph
+# @evidoc/graph
 
 Builds document, source, symbol, API, rule, and evidence relationships from an Evidoc core report.
 

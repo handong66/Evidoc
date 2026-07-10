@@ -8,21 +8,21 @@ Evidoc uses a workspace so entrypoints can be installed independently, but detec
 
 ## Product Surfaces
 
-- `@handong66/evidoc-core`: repository scanning, configuration validation, changed-impact calculation, deterministic detectors, evidence model, frontmatter/review-log contracts, MCP tool metadata, Agent Runtime Contract creation, stable finding fingerprints, shared path-safety helpers, and report assembly.
-- `@handong66/evidoc-cli`: local command line interface for `demo`, `app`, `serve`, `check`, `diagnose`, `diff`, `guard`, `recipes`, `fix`, `verify`, `agent-eval`, `index`, `explain`, `graph`, `dashboard`, `draft`, `validate`, `multi`, `mcp-tools`, and `action`.
-- `@handong66/evidoc-reports`: text and Markdown formatting, with JSON emitted directly by product surfaces.
-- `@handong66/evidoc-github-action`: Action wrapper that runs the CLI in advisory or gate mode.
-- `@handong66/evidoc-mcp-server`: `evidoc.agent_scan` as the default read-only repair entrypoint, `evidoc.get_drift_status` as the status entrypoint, focused read tools after that, and review-log recording as the only write tool. Writes require explicit authorization and only target roots inside the MCP server working directory.
-- `@handong66/evidoc-graph`: file, document, symbol, API, claim, command, and agent-instruction graph.
-- `@handong66/evidoc-frontmatter`: compatibility re-export of the canonical core source-binding, validation, and backfill API.
-- `@handong66/evidoc-patcher`: deterministic safe patches, bounded LLM request construction, and patch validation. It does not call a model provider itself.
-- `@handong66/evidoc-dashboard`: static report renderer plus the bilingual local Command Center UI, including fleet health, repository cockpit, Local Git Gate state, staged and unstaged changed files, affected docs, latest gate result with gate baseline, baseline commit, runtime status, fingerprint, freshness, triage queue, repair console, and copyable agent prompts.
-- `@handong66/evidoc-local-app`: loopback-only Web server, auto-init, deterministic safe-fix action, Local Git Gate enablement, system folder picker bridge, multi-repository scan state, Git status, scan history, local gate report summaries, agent skill scaffolding, and GUI actions.
+- `@evidoc/core`: repository scanning, configuration validation, changed-impact calculation, deterministic detectors, evidence model, frontmatter/review-log contracts, MCP tool metadata, Agent Runtime Contract creation, stable finding fingerprints, shared path-safety helpers, and report assembly.
+- `@evidoc/cli`: local command line interface for `demo`, `app`, `serve`, `check`, `diagnose`, `diff`, `guard`, `recipes`, `fix`, `verify`, `agent-eval`, `index`, `explain`, `graph`, `dashboard`, `draft`, `validate`, `multi`, `mcp-tools`, and `action`.
+- `@evidoc/reports`: text and Markdown formatting, with JSON emitted directly by product surfaces.
+- `@evidoc/github-action`: Action wrapper that runs the CLI in advisory or gate mode.
+- `@evidoc/mcp-server`: `evidoc.agent_scan` as the default read-only repair entrypoint, `evidoc.get_drift_status` as the status entrypoint, focused read tools after that, and review-log recording as the only write tool. Writes require explicit authorization and only target roots inside the MCP server working directory.
+- `@evidoc/graph`: file, document, symbol, API, claim, command, and agent-instruction graph.
+- `@evidoc/frontmatter`: compatibility re-export of the canonical core source-binding, validation, and backfill API.
+- `@evidoc/patcher`: deterministic safe patches, bounded LLM request construction, and patch validation. It does not call a model provider itself.
+- `@evidoc/dashboard`: static report renderer plus the bilingual local Command Center UI, including fleet health, repository cockpit, Local Git Gate state, staged and unstaged changed files, affected docs, latest gate result with gate baseline, baseline commit, runtime status, fingerprint, freshness, triage queue, repair console, and copyable agent prompts.
+- `@evidoc/local-app`: loopback-only Web server, auto-init, deterministic safe-fix action, Local Git Gate enablement, system folder picker bridge, multi-repository scan state, Git status, scan history, local gate report summaries, agent skill scaffolding, and GUI actions.
   Added roots must be existing real directories and are stored by canonical real path.
   File-opening and write-capable actions are limited to roots already added to the Local App, with exact Host validation and same-origin POST enforcement.
   Generated config, workflow, local hooks, history, reports, and scaffold files use repository-bound writable path checks.
   File-opening resolves real paths and rejects symlink escapes; POST endpoints reject cross-origin browser writes and oversized JSON bodies.
-- `@handong66/evidoc-review-log`: compatibility re-export of the canonical core append-only review-decision API.
+- `@evidoc/review-log`: compatibility re-export of the canonical core append-only review-decision API.
 
 ## Data Flow
 

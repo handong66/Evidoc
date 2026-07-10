@@ -1,4 +1,4 @@
-# @handong66/evidoc-dashboard
+# @evidoc/dashboard
 
 Static and Local App HTML rendering for Evidoc reports. It consumes core reports; it does not compute an independent drift status.
 

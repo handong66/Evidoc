@@ -1,4 +1,4 @@
-# @handong66/evidoc-core
+# @evidoc/core
 
 The deterministic repository analyzer, evidence model, runtime contract, and shared policy contracts used by every Evidoc surface.
 

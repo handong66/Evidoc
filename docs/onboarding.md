@@ -9,27 +9,27 @@ The npm package is the default adoption path. Local Git mode is first-class for 
 From any repository with Node.js 22 or later:
 
 ```bash
-npx repo-evidoc check --fail-on=review_needed
-npx repo-evidoc app
-npx repo-evidoc init --yes --local-git --install-hooks
+npx evidoc check --fail-on=review_needed
+npx evidoc app
+npx evidoc init --yes --local-git --install-hooks
 ```
 
 ## If You Only Need One Path
 
 | Situation | Command | What happens |
 |-----------|---------|--------------|
-| Try Evidoc safely | `npx repo-evidoc demo` | Opens a temporary sample repository with intentional drift. |
-| Scan without setup writes | `npx repo-evidoc check --fail-on=review_needed` | Prints terminal findings and exits. |
-| Use the local Web UI | `npx repo-evidoc app` | Auto-initializes local config if needed, scans, and opens the Command Center. |
-| Keep everything local | `npx repo-evidoc init --yes --local-git --install-hooks` | Writes repo-local hooks and ignored local reports. |
-| Add GitHub PR comments | `npx repo-evidoc init --yes` | Writes config and a GitHub Actions workflow. |
+| Try Evidoc safely | `npx evidoc demo` | Opens a temporary sample repository with intentional drift. |
+| Scan without setup writes | `npx evidoc check --fail-on=review_needed` | Prints terminal findings and exits. |
+| Use the local Web UI | `npx evidoc app` | Auto-initializes local config if needed, scans, and opens the Command Center. |
+| Keep everything local | `npx evidoc init --yes --local-git --install-hooks` | Writes repo-local hooks and ignored local reports. |
+| Add GitHub PR comments | `npx evidoc init --yes` | Writes config and a GitHub Actions workflow. |
 
-The package name is `repo-evidoc`; the executable command installed by the package is `evidoc`. For copy-paste npm usage, keep using `npx repo-evidoc ...`.
+The package name is `evidoc`; the executable command installed by the package is `evidoc`. For copy-paste npm usage, keep using `npx evidoc ...`.
 
 ## What Gets Written
 
 - `check`, `doctor`, `diagnose`, `verify`, and `recipes` are read-only scans or generators unless redirected by the shell. `agent-eval` is an experimental maintainer-only benchmark-pack generator; it does not run agents.
-- `app` and bare `npx repo-evidoc` may create `.evidoc/config.json` and `.evidoc/.gitignore` so local scan history stays out of commits.
+- `app` and bare `npx evidoc` may create `.evidoc/config.json` and `.evidoc/.gitignore` so local scan history stays out of commits.
 - `init --yes` writes `.evidoc/config.json`, `.evidoc/.gitignore`, and either a GitHub Actions workflow or local hooks.
 - `fix --safe --write --json` writes only deterministic safe fixes and requires the explicit `--safe` flag.
 
@@ -56,9 +56,9 @@ A bare `evidoc --root <repository> --json` runs a scan; use `evidoc app --root <
 Use Local Git Gate when the repository is local-only, private, air-gapped, or simply should not depend on GitHub Actions:
 
 ```bash
-npx repo-evidoc init --yes --local-git
+npx evidoc init --yes --local-git
 git config core.hooksPath .githooks
-npx repo-evidoc guard --event pre-commit --fail-on=review_needed
+npx evidoc guard --event pre-commit --fail-on=review_needed
 ```
 
 `init --local-git` creates:
@@ -71,16 +71,16 @@ npx repo-evidoc guard --event pre-commit --fail-on=review_needed
 It skips the GitHub workflow file. Hook activation is explicit: run repo-local `git config core.hooksPath .githooks`, or use:
 
 ```bash
-npx repo-evidoc init --yes --local-git --install-hooks
+npx evidoc init --yes --local-git --install-hooks
 ```
 
 `guard` is the stable local gate entrypoint:
 
 ```bash
-npx repo-evidoc guard --event pre-commit
-npx repo-evidoc guard --event pre-push --since main
-npx repo-evidoc guard --event pre-push --since merge-base:main
-npx repo-evidoc guard --event manual --scope staged
+npx evidoc guard --event pre-commit
+npx evidoc guard --event pre-push --since main
+npx evidoc guard --event pre-push --since merge-base:main
+npx evidoc guard --event manual --scope staged
 ```
 
 `pre-commit` defaults to staged files so unrelated unstaged edits do not block the current commit. `pre-push` and manual runs default to the worktree and accept either a normal Git ref or `merge-base:<branch>`. `pre-commit` and `pre-push` guard events default to `--fail-on=review_needed`, so generated hooks block without requiring users to remember a flag; pass `--fail-on=none` only for an advisory local run.
@@ -95,7 +95,7 @@ The aggregate `runtime.fingerprint` includes event, mode, scope, baseline, affec
 For GitLab CI, Jenkins, Gitea Actions, or Buildkite, generate snippets that call the same CLI:
 
 ```bash
-npx repo-evidoc recipes --target all
+npx evidoc recipes --target all
 ```
 
 ## GitHub Action CI Setup
@@ -123,7 +123,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-      - uses: handong66/Evidoc/packages/github-action@v0.2.1
+      - uses: handong66/Evidoc/packages/github-action@v0.3.0
         with:
           fail-on: review_needed
           sarif: "false"
@@ -173,7 +173,7 @@ SARIF upload is opt-in with `sarif: "true"` because many private repositories do
 This is the lowest-cognition path:
 
 ```bash
-npx repo-evidoc
+npx evidoc
 ```
 
 It:
@@ -192,7 +192,7 @@ Repositories with zero scanned documents are marked `review_needed` instead of g
 To try Evidoc without touching a real repository:
 
 ```bash
-npx repo-evidoc demo
+npx evidoc demo
 ```
 
 The demo opens a temporary sample repository with intentional drift in the same local Command Center used for real repositories.
@@ -202,8 +202,8 @@ The demo opens a temporary sample repository with intentional drift in the same 
 Use explicit app commands when you want to control roots or keep the server running:
 
 ```bash
-npx repo-evidoc app
-npx repo-evidoc serve --root . --root ../another-repo
+npx evidoc app
+npx evidoc serve --root . --root ../another-repo
 ```
 
 The app can scan configured local repositories, display per-repository red/yellow/green status, show evidence for each finding, open the relevant file, watch and refresh scan state, apply explicitly selected deterministic safe fixes, and scaffold agent support files. Findings without a safe proposal remain review-only.
@@ -235,13 +235,13 @@ The server binds only to `127.0.0.1`, `localhost`, or `::1`, requires the exact 
 For automation or tests, use:
 
 ```bash
-npx repo-evidoc app --once --json --no-open
+npx evidoc app --once --json --no-open
 ```
 
 ## Check Readiness
 
 ```bash
-npx repo-evidoc doctor
+npx evidoc doctor
 ```
 
 `doctor` exits with code `0` when the config is valid and either GitHub Action ready or Local Git Gate ready.
@@ -261,7 +261,7 @@ If a workflow delegates to `uses: ./.github/actions/<name>`, `doctor` resolves t
 ## First Scan
 
 ```bash
-npx repo-evidoc check --fail-on=review_needed
+npx evidoc check --fail-on=review_needed
 ```
 
 Generated CI uses `--fail-on=review_needed` so evidence-backed documentation and agent-instruction drift cannot merge silently. Use `--fail-on=broken` only for an advisory rollout that should not block review-needed drift.
@@ -269,14 +269,14 @@ Generated CI uses `--fail-on=review_needed` so evidence-backed documentation and
 ## Repair Loop
 
 ```bash
-npx repo-evidoc diagnose
-npx repo-evidoc guard --event pre-commit --fail-on=review_needed
-npx repo-evidoc guard --event pre-push --since merge-base:main --fail-on=review_needed
-npx repo-evidoc verify --instructions --json
-npx repo-evidoc recipes --target all
-npx repo-evidoc draft --json > /tmp/evidoc-proposals.json
-npx repo-evidoc validate --proposal /tmp/evidoc-proposals.json --json
-npx repo-evidoc fix --safe --write --json
+npx evidoc diagnose
+npx evidoc guard --event pre-commit --fail-on=review_needed
+npx evidoc guard --event pre-push --since merge-base:main --fail-on=review_needed
+npx evidoc verify --instructions --json
+npx evidoc recipes --target all
+npx evidoc draft --json > /tmp/evidoc-proposals.json
+npx evidoc validate --proposal /tmp/evidoc-proposals.json --json
+npx evidoc fix --safe --write --json
 ```
 
 `diagnose` emits evidence-bound prompts and classifies patch proposals as `safe`, `review`, or `blocked`. In local Git workflows, the agent loop is `evidoc guard --event pre-commit`, `evidoc diagnose`, `evidoc fix --safe --write`, and `git diff`; it should not tell users to push and wait for a GitHub workflow unless the repository actually uses GitHub Actions. Safe fixes are deterministic only, and `fix --write` is rejected unless `--safe` is present.
@@ -296,9 +296,9 @@ These tools share the same core scan and finding fingerprints. Their aggregate r
 ## Pull Request Diff Loop
 
 ```bash
-npx repo-evidoc diff --since origin/main --json
-npx repo-evidoc check --changed-only --since origin/main --fail-on=review_needed
-npx repo-evidoc guard --event pre-push --since merge-base:main --fail-on=review_needed
+npx evidoc diff --since origin/main --json
+npx evidoc check --changed-only --since origin/main --fail-on=review_needed
+npx evidoc guard --event pre-push --since merge-base:main --fail-on=review_needed
 ```
 
 Diff mode reports changed files, affected documents, undocumented changed files, and findings in affected documents.
@@ -321,8 +321,8 @@ npm run evidoc -- action --root /path/to/repository --format=github --pr-comment
 If you do not want the GUI, keep using the explicit CLI setup path:
 
 ```bash
-npx repo-evidoc init --yes
-npx repo-evidoc init --yes --local-git --install-hooks
+npx evidoc init --yes
+npx evidoc init --yes --local-git --install-hooks
 ```
 
 This creates:
@@ -336,13 +336,13 @@ The command is idempotent. Existing files are kept by default. Use `--no-action`
 Optional scaffolders can be added with:
 
 ```bash
-npx repo-evidoc init --yes --with agents,hooks,badge,llms
+npx evidoc init --yes --with agents,hooks,badge,llms
 ```
 
 Available scaffolders are `agents`, `hooks`, `ci`, `badge`, and `llms`.
 The `agents` scaffolder creates AGENTS.md, CLAUDE.md, Cursor rules, GitHub Copilot instructions, and the Evidoc skill template under the generated config directory.
 The generated instructions tell agents when to run or read Evidoc, how to trust a same-scope local report only when `changedFiles` and content fingerprints still match, and how to dedupe replies by `runtime.findings[].fingerprint`.
-The `hooks` scaffolder creates local pre-commit and pre-push hooks that prefer `./node_modules/.bin/evidoc`, then `npx --yes repo-evidoc`, then a global `evidoc`.
+The `hooks` scaffolder creates local pre-commit and pre-push hooks that prefer `./node_modules/.bin/evidoc`, then `npx --yes evidoc`, then a global `evidoc`.
 
 If no Evidoc runtime is available, the hooks print a warning and skip instead of blocking every local commit or push. Use `init --local-git` or `git config core.hooksPath .githooks` when those generated hooks should become the active local gate. The examples omit `ci` because `init` already creates the GitHub Action workflow by default; use `--no-action` plus `--with ci` only when you want CI generated through the scaffolder path.
 
@@ -351,7 +351,7 @@ If no Evidoc runtime is available, the hooks print a warning and skip instead of
 The generated workflow uses the full low-permission workflow shown in GitHub Action CI Setup. Its Evidoc step uses:
 
 ```yaml
-- uses: handong66/Evidoc/packages/github-action@v0.2.1
+- uses: handong66/Evidoc/packages/github-action@v0.3.0
   with:
     fail-on: review_needed
     sarif: "false"

@@ -1,4 +1,4 @@
-# @handong66/evidoc-patcher
+# @evidoc/patcher
 
 Evidence-bound patch drafting, proposal validation, and deterministic safe-fix application for Evidoc.
 
