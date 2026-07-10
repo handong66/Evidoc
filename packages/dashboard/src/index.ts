@@ -1,6 +1,6 @@
 import { basename } from "node:path";
-import type { AgentRuntimeContract, DriftReport, MultiRepositoryReport } from "@handong66/evidoc-core";
-import { buildDriftGraph } from "@handong66/evidoc-graph";
+import type { AgentRuntimeContract, DriftReport, MultiRepositoryReport } from "@evidoc/core";
+import { buildDriftGraph } from "@evidoc/graph";
 
 export interface DashboardSnapshot {
   generatedAt: string;

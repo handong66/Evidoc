@@ -1,4 +1,4 @@
-import type { DriftEvidence, DriftReport } from "@handong66/evidoc-core";
+import type { DriftEvidence, DriftReport } from "@evidoc/core";
 
 export type GraphNodeKind = "document" | "source" | "symbol" | "api" | "claim" | "command";
 export type GraphEdgeKind = "references" | "declares" | "covers" | "changes" | "invalidates";

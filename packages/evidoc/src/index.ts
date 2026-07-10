@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-export { runCli } from "@handong66/evidoc-cli";
+export { runCli } from "@evidoc/cli";
 
 import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { runCli } from "@handong66/evidoc-cli";
+import { runCli } from "@evidoc/cli";
 
 function isDirectExecution(metaUrl: string): boolean {
   if (!process.argv[1]) return false;

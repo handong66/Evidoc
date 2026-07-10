@@ -3,9 +3,9 @@ export {
   parseDocumentFrontmatter,
   serializeDocumentFrontmatter,
   validateDocumentFrontmatter
-} from "@handong66/evidoc-core";
+} from "@evidoc/core";
 export type {
   DocumentFrontmatter,
   ParsedDocumentFrontmatter,
   SourceBinding
-} from "@handong66/evidoc-core";
+} from "@evidoc/core";

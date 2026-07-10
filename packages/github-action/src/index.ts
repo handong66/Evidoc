@@ -9,13 +9,13 @@ import {
   type AgentRuntimeContract,
   type FailOn,
   type DriftReport
-} from "@handong66/evidoc-core";
+} from "@evidoc/core";
 import {
   formatGithubAnnotations,
   formatMarkdownReport,
   formatPrComment,
   formatSarifReport
-} from "@handong66/evidoc-reports";
+} from "@evidoc/reports";
 
 export interface ActionPolicy {
   failOn: FailOn;

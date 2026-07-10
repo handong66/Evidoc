@@ -23,13 +23,13 @@ import {
   type DriftReport,
   type AgentRuntimeContract,
   type EvidocMcpTool
-} from "@handong66/evidoc-core";
-import { createPatchProposals, validatePatchProposal, type PatchProposal } from "@handong66/evidoc-patcher";
-import { formatMarkdownReport } from "@handong66/evidoc-reports";
+} from "@evidoc/core";
+import { createPatchProposals, validatePatchProposal, type PatchProposal } from "@evidoc/patcher";
+import { formatMarkdownReport } from "@evidoc/reports";
 import { z } from "zod";
 
-export { isWriteToolAllowed, listMcpTools, READ_ONLY_TOOLS, WRITE_TOOLS } from "@handong66/evidoc-core";
-export type { EvidocMcpTool, McpToolDefinition } from "@handong66/evidoc-core";
+export { isWriteToolAllowed, listMcpTools, READ_ONLY_TOOLS, WRITE_TOOLS } from "@evidoc/core";
+export type { EvidocMcpTool, McpToolDefinition } from "@evidoc/core";
 
 const AGENT_DATA_TRUST_BOUNDARY = {
   findingFields: "untrusted_data",

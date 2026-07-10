@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { checkRepository, readFindingDocuments, resolveExistingPathInsideRoot } from "@handong66/evidoc-core";
-import type { DriftFinding, DriftReport } from "@handong66/evidoc-core";
+import { checkRepository, readFindingDocuments, resolveExistingPathInsideRoot } from "@evidoc/core";
+import type { DriftFinding, DriftReport } from "@evidoc/core";
 
 export type PatchKind = "safe_deterministic" | "llm_draft" | "human_only";
 export type PatchClassification = "safe" | "review" | "blocked";

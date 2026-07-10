@@ -1,6 +1,6 @@
 {
-  "name": "@handong66/evidoc-dashboard",
-  "version": "0.2.1",
+  "name": "@evidoc/dashboard",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "prepublishOnly": "node ../../scripts/ensure-built-package.mjs"
@@ -15,8 +15,8 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@handong66/evidoc-core": "0.2.1",
-    "@handong66/evidoc-graph": "0.2.1"
+    "@evidoc/core": "0.3.0",
+    "@evidoc/graph": "0.3.0"
   },
   "license": "MIT",
   "repository": {

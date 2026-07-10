@@ -20,11 +20,11 @@ import {
   readFindingDocuments,
   readRepository,
   resolveExistingPathInsideRoot
-} from "@handong66/evidoc-core";
-import type { AgentRuntimeContract, DriftFinding, FailOn } from "@handong66/evidoc-core";
-import { renderDashboardHtml } from "@handong66/evidoc-dashboard";
-import { buildDriftGraph } from "@handong66/evidoc-graph";
-import { runGithubAction } from "@handong66/evidoc-github-action";
+} from "@evidoc/core";
+import type { AgentRuntimeContract, DriftFinding, FailOn } from "@evidoc/core";
+import { renderDashboardHtml } from "@evidoc/dashboard";
+import { buildDriftGraph } from "@evidoc/graph";
+import { runGithubAction } from "@evidoc/github-action";
 import {
   createDefaultEvidocConfig,
   defaultGithubWorkflow,
@@ -37,10 +37,10 @@ import {
   scaffoldRepository,
   type ScaffoldFeature,
   startLocalAppServer
-} from "@handong66/evidoc-local-app";
-import { applySafePatchProposals, createPatchProposals, validatePatchProposal } from "@handong66/evidoc-patcher";
-import type { PatchProposal } from "@handong66/evidoc-patcher";
-import { formatTextReport } from "@handong66/evidoc-reports";
+} from "@evidoc/local-app";
+import { applySafePatchProposals, createPatchProposals, validatePatchProposal } from "@evidoc/patcher";
+import type { PatchProposal } from "@evidoc/patcher";
+import { formatTextReport } from "@evidoc/reports";
 
 type Command =
   | "agent-eval"

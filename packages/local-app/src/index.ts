@@ -14,15 +14,15 @@ import {
   resolveWritablePathInsideRoot,
   type EvidocConfig,
   type DriftReport
-} from "@handong66/evidoc-core";
-import { applySafePatchProposals } from "@handong66/evidoc-patcher";
+} from "@evidoc/core";
+import { applySafePatchProposals } from "@evidoc/patcher";
 import {
   renderLocalAppHtml,
   type LocalAppDashboardState,
   type LocalAppHistoryPoint,
   type LocalAppRepositoryState,
   type RepositoryHealth
-} from "@handong66/evidoc-dashboard";
+} from "@evidoc/dashboard";
 
 export interface ScanLocalAppOptions {
   autoInit?: boolean;

@@ -1,6 +1,6 @@
 {
-  "name": "@handong66/evidoc-core",
-  "version": "0.2.1",
+  "name": "@evidoc/core",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "prepublishOnly": "node ../../scripts/ensure-built-package.mjs"

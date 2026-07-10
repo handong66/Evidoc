@@ -1,6 +1,6 @@
 {
-  "name": "repo-evidoc",
-  "version": "0.2.1",
+  "name": "evidoc",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "prepublishOnly": "node ../../scripts/ensure-built-package.mjs"
@@ -18,7 +18,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@handong66/evidoc-cli": "0.2.1"
+    "@evidoc/cli": "0.3.0"
   },
   "engines": {
     "node": ">=22"

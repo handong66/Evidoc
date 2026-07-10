@@ -1,4 +1,4 @@
-import type { DriftFinding, DriftReport } from "@handong66/evidoc-core";
+import type { DriftFinding, DriftReport } from "@evidoc/core";
 
 export interface ReportFormatOptions {
   setupWarnings?: string[];
