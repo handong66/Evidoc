@@ -9,6 +9,8 @@ import { dirname, join } from "node:path";
 import { fingerprintFileContent } from "@handong66/evidoc-core";
 import { enableGithubAction, enableLocalGitGate, scanLocalAppRepositories, startLocalAppServer } from "../src/index.js";
 
+const releaseVersion = JSON.parse(await readFile(join(process.cwd(), "package.json"), "utf8")).version as string;
+
 async function fixture(prefix = "evidoc-local-app-"): Promise<string> {
   return mkdtemp(join(tmpdir(), prefix));
 }
@@ -462,7 +464,7 @@ test("startLocalAppServer serves app state and can enable CI for a repository", 
     assert.equal(ciResponse.status, 200);
     assert.equal(existsSync(join(root, ".github", "workflows", "evidoc.yml")), true);
     const workflow = await readFile(join(root, ".github", "workflows", "evidoc.yml"), "utf8");
-    assert.match(workflow, /handong66\/Evidoc\/packages\/github-action@v0\.2\.0/);
+    assert.ok(workflow.includes(`handong66/Evidoc/packages/github-action@v${releaseVersion}`));
     assert.match(workflow, /permissions:\n  contents: read\n  actions: read\n  pull-requests: write/);
     assert.doesNotMatch(workflow, /security-events: write/);
     assert.match(workflow, /fail-on: review_needed/);

@@ -9,6 +9,7 @@ import { promisify } from "node:util";
 import { runCli } from "../src/index.js";
 
 const execFileAsync = promisify(execFile);
+const releaseVersion = JSON.parse(await readFile(join(process.cwd(), "package.json"), "utf8")).version as string;
 
 async function fixture(): Promise<string> {
   return mkdtemp(join(tmpdir(), "evidoc-onboarding-"));
@@ -67,7 +68,7 @@ test("init creates config and GitHub workflow for zero-friction onboarding", asy
   assert.match(await readFile(join(root, ".evidoc", ".gitignore"), "utf8"), /^history\.jsonl$/m);
 
   const workflow = await readFile(join(root, ".github", "workflows", "evidoc.yml"), "utf8");
-  assert.match(workflow, /handong66\/Evidoc\/packages\/github-action@v0\.2\.0\n/);
+  assert.ok(workflow.includes(`handong66/Evidoc/packages/github-action@v${releaseVersion}\n`));
   assert.match(workflow, /permissions:\n  contents: read\n  actions: read\n  pull-requests: write/);
   assert.doesNotMatch(workflow, /security-events: write/);
   assert.match(workflow, /fail-on: review_needed/);
