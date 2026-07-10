@@ -1,6 +1,6 @@
 {
   "name": "@handong66/evidoc-mcp-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
     "prepublishOnly": "node ../../scripts/ensure-built-package.mjs"
@@ -18,9 +18,9 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@handong66/evidoc-core": "0.2.0",
-    "@handong66/evidoc-patcher": "0.2.0",
-    "@handong66/evidoc-reports": "0.2.0",
+    "@handong66/evidoc-core": "0.2.1",
+    "@handong66/evidoc-patcher": "0.2.1",
+    "@handong66/evidoc-reports": "0.2.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.4.3"
   },

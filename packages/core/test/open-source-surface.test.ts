@@ -113,6 +113,33 @@ test("release pipeline verifies versions, package identity, and registry state b
   }
 });
 
+test("workflow dependencies use immutable Node 24 action releases", async () => {
+  const sources = await Promise.all([
+    readFile(join(root, ".github/workflows/ci.yml"), "utf8"),
+    readFile(join(root, ".github/workflows/release.yml"), "utf8"),
+    readFile(join(root, "packages/github-action/action.yml"), "utf8"),
+    readFile(join(root, "packages/cli/src/index.ts"), "utf8"),
+    readFile(join(root, "packages/local-app/src/index.ts"), "utf8")
+  ]);
+  const expectedPins = new Map([
+    ["actions/checkout", "9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0"],
+    ["actions/setup-node", "48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e"],
+    ["actions/upload-artifact", "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"],
+    ["softprops/action-gh-release", "718ea10b132b3b2eba29c1007bb80653f286566b"],
+    ["actions/github-script", "3a2844b7e9c422d3c10d287c895573f7108da1b3"],
+    ["github/codeql-action/upload-sarif", "99df26d4f13ea111d4ec1a7dddef6063f76b97e9"]
+  ]);
+  const combined = sources.join("\n");
+
+  for (const [actionName, sha] of expectedPins) {
+    const references = [...combined.matchAll(new RegExp(`${actionName.replaceAll("/", "\\/")}@([a-f0-9]{40})`, "g"))];
+    assert.ok(references.length > 0, `missing pinned action dependency: ${actionName}`);
+    for (const reference of references) {
+      assert.equal(reference[1], sha, `stale action dependency: ${actionName}@${reference[1]}`);
+    }
+  }
+});
+
 test("repository CI self-scan uses review-needed gating", async () => {
   const workflow = await readFile(join(root, ".github/workflows/ci.yml"), "utf8");
   assert.match(workflow, /npm run evidoc -- --fail-on=review_needed/);

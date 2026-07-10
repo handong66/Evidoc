@@ -182,8 +182,8 @@ jobs:
   evidoc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: handong66/Evidoc/packages/github-action@v0.2.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: handong66/Evidoc/packages/github-action@v0.2.1
         with:
           fail-on: review_needed
           sarif: "false"
@@ -201,7 +201,7 @@ Only add `security-events: write` when setting `sarif: "true"`.
 The generated workflow is pinned to the matching release tag. To upgrade, change only the action reference inside the `steps` list:
 
 ```yaml
-- uses: handong66/Evidoc/packages/github-action@v0.2.0
+- uses: handong66/Evidoc/packages/github-action@v0.2.1
   with:
     fail-on: review_needed
     sarif: "false"

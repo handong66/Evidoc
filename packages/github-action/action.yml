@@ -46,7 +46,7 @@ runs:
   using: composite
   steps:
     - name: Set up Node.js
-      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
       with:
         node-version: "22"
     - name: Build Evidoc from the GitHub action checkout
@@ -467,7 +467,7 @@ runs:
         NODE
     - name: Create auto-fix head check
       if: ${{ always() && inputs.auto-fix == 'true' && inputs.auto-commit == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
-      uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
       env:
         INPUT_FAIL_ON: ${{ inputs.fail-on }}
       with:
@@ -514,13 +514,13 @@ runs:
     - name: Upload SARIF
       if: ${{ always() && inputs.sarif == 'true' && hashFiles('.evidoc/reports/evidoc.sarif') != '' }}
       continue-on-error: true
-      uses: github/codeql-action/upload-sarif@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+      uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
       with:
         sarif_file: .evidoc/reports/evidoc.sarif
         wait-for-processing: false
     - name: Comment on pull request
       if: ${{ always() && inputs.pr-comment == 'true' && github.event_name == 'pull_request' }}
-      uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
       with:
         script: |
           const fs = require('node:fs');

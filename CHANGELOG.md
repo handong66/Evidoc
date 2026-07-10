@@ -4,6 +4,10 @@ This project follows Semantic Versioning. Before 1.0.0, minor versions may inclu
 
 ## Unreleased
 
+## 0.2.1 - 2026-07-10
+
+- Upgraded every bundled and generated GitHub Action dependency to an immutable Node 24 release, eliminating GitHub's Node 20 runtime deprecation warning for CI, releases, and the packaged Evidoc Action.
+
 ## 0.2.0 - 2026-07-10
 
 - Fixed false-green gates for invalid fail policies/config files, changed-source coverage in the GitHub Action, nested Markdown links, and generated pre-push baselines.

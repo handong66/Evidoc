@@ -1,6 +1,6 @@
 {
   "name": "@handong66/evidoc-reports",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
     "prepublishOnly": "node ../../scripts/ensure-built-package.mjs"
@@ -15,7 +15,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@handong66/evidoc-core": "0.2.0"
+    "@handong66/evidoc-core": "0.2.1"
   },
   "license": "MIT",
   "repository": {

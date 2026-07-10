@@ -7,7 +7,7 @@ Evidoc publishes npm package tarballs and publishes registry packages through np
 ```bash
 npm ci
 npm test
-npm run release:verify -- --tag v0.2.0
+npm run release:verify -- --tag v0.2.1
 npm run release:smoke:npx
 npm run evidoc -- --fail-on=review_needed
 npm whoami
@@ -92,16 +92,16 @@ The `Release Artifacts` GitHub Actions workflow runs on `v*` tags and manual dis
 Until the project has external users, package versions can stay synchronized. A release tag should use:
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.2.1
+git push origin v0.2.1
 ```
 
-The generated onboarding workflow references the exact matching tag, `handong66/Evidoc/packages/github-action@v0.2.0`. Do not merge or advertise that generated workflow until the tag exists in the public repository.
+The generated onboarding workflow references the exact matching tag, `handong66/Evidoc/packages/github-action@v0.2.1`. Do not merge or advertise that generated workflow until the tag exists in the public repository.
 
 After the first public release, maintainers can document a pinned release path and move the floating major tag after the exact release tag is pushed:
 
 ```bash
-git tag -f v0 v0.2.0
+git tag -f v0 v0.2.1
 git push origin -f v0
 ```
 
