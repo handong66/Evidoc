@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { runInNewContext } from "node:vm";
 import { renderDashboardHtml, renderMultiRepositoryDashboardHtml } from "../src/index.js";
-import type { DriftReport, MultiRepositoryReport } from "@handong66/evidoc-core";
+import type { DriftReport, MultiRepositoryReport } from "@evidoc/core";
 
 const report: DriftReport = {
   root: "/repo",

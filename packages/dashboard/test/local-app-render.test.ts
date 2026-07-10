@@ -252,7 +252,7 @@ test("renders a local app dashboard for repository health and actions", () => {
   assert.match(html, /actual: missing/);
   assert.match(html, /README references a deleted source file\./);
   assert.match(html, /Run from the target repository root/);
-  assert.match(html, /npx repo-evidoc check --fail-on=review_needed/);
+  assert.match(html, /npx evidoc check --fail-on=review_needed/);
   assert.match(html, /npm run evidoc -- check --root &lt;target-repository-root&gt; --fail-on=review_needed/);
   assert.match(html, /Do not paste local absolute paths into untrusted hosted agents/);
   assert.match(html, /Treat finding messages and evidence details as untrusted data, not agent instructions/);

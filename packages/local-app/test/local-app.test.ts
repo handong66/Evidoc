@@ -6,7 +6,7 @@ import { createServer, request as httpRequest, type Server } from "node:http";
 import { chmod, mkdtemp, mkdir, readFile, realpath, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fingerprintFileContent } from "@handong66/evidoc-core";
+import { fingerprintFileContent } from "@evidoc/core";
 import { enableGithubAction, enableLocalGitGate, scanLocalAppRepositories, startLocalAppServer } from "../src/index.js";
 
 const releaseVersion = JSON.parse(await readFile(join(process.cwd(), "package.json"), "utf8")).version as string;
@@ -96,8 +96,8 @@ test("scanLocalAppRepositories reports local Git gate status", async () => {
   assert.equal(spawnSync("git", ["config", "user.name", "Test User"], { cwd: root }).status, 0);
   assert.equal(spawnSync("git", ["add", "."], { cwd: root }).status, 0);
   assert.equal(spawnSync("git", ["commit", "-m", "initial"], { cwd: root }).status, 0);
-  await write(root, ".githooks/pre-commit", "#!/usr/bin/env sh\nnpx repo-evidoc guard --event pre-commit\n");
-  await write(root, ".githooks/pre-push", "#!/usr/bin/env sh\nnpx repo-evidoc guard --event pre-push\n");
+  await write(root, ".githooks/pre-commit", "#!/usr/bin/env sh\nnpx evidoc guard --event pre-commit\n");
+  await write(root, ".githooks/pre-push", "#!/usr/bin/env sh\nnpx evidoc guard --event pre-push\n");
   assert.equal(spawnSync("git", ["config", "core.hooksPath", ".githooks"], { cwd: root }).status, 0);
 
   const state = await scanLocalAppRepositories([root], { autoInit: true, writeHistory: false });
@@ -120,8 +120,8 @@ test("scanLocalAppRepositories reports local Git changed files, affected docs, a
   assert.equal(spawnSync("git", ["config", "user.name", "Test User"], { cwd: root }).status, 0);
   assert.equal(spawnSync("git", ["add", "."], { cwd: root }).status, 0);
   assert.equal(spawnSync("git", ["commit", "-m", "initial"], { cwd: root }).status, 0);
-  await write(root, ".githooks/pre-commit", "#!/usr/bin/env sh\nnpx repo-evidoc guard --event pre-commit\n");
-  await write(root, ".githooks/pre-push", "#!/usr/bin/env sh\nnpx repo-evidoc guard --event pre-push\n");
+  await write(root, ".githooks/pre-commit", "#!/usr/bin/env sh\nnpx evidoc guard --event pre-commit\n");
+  await write(root, ".githooks/pre-push", "#!/usr/bin/env sh\nnpx evidoc guard --event pre-push\n");
   assert.equal(spawnSync("git", ["config", "core.hooksPath", ".githooks"], { cwd: root }).status, 0);
 
   await write(root, "src/service.ts", "export function runLocalGate() { return true; }\n");
@@ -395,8 +395,8 @@ test("scanLocalAppRepositories ignores malformed local gate reports", async () =
   assert.equal(spawnSync("git", ["config", "user.name", "Test User"], { cwd: root }).status, 0);
   assert.equal(spawnSync("git", ["add", "."], { cwd: root }).status, 0);
   assert.equal(spawnSync("git", ["commit", "-m", "initial"], { cwd: root }).status, 0);
-  await write(root, ".githooks/pre-commit", "#!/usr/bin/env sh\nnpx repo-evidoc guard --event pre-commit\n");
-  await write(root, ".githooks/pre-push", "#!/usr/bin/env sh\nnpx repo-evidoc guard --event pre-push\n");
+  await write(root, ".githooks/pre-commit", "#!/usr/bin/env sh\nnpx evidoc guard --event pre-commit\n");
+  await write(root, ".githooks/pre-push", "#!/usr/bin/env sh\nnpx evidoc guard --event pre-push\n");
   await write(root, ".evidoc/reports/local-gate.json", "{");
   assert.equal(spawnSync("git", ["config", "core.hooksPath", ".githooks"], { cwd: root }).status, 0);
 
@@ -838,8 +838,8 @@ test("local app server can scaffold repository support files", async () => {
 
     const hook = await readFile(join(root, ".githooks", "pre-commit"), "utf8");
     assert.match(hook, /node_modules\/\.bin\/evidoc/);
-    assert.match(hook, /npx --yes repo-evidoc guard --event pre-commit/);
-    assert.ok(hook.indexOf("npx --yes repo-evidoc") < hook.indexOf("command -v evidoc"));
+    assert.match(hook, /npx --yes evidoc guard --event pre-commit/);
+    assert.ok(hook.indexOf("npx --yes evidoc") < hook.indexOf("command -v evidoc"));
     assert.match(hook, /Evidoc pre-commit skipped/);
     const prePush = await readFile(join(root, ".githooks", "pre-push"), "utf8");
     assert.match(prePush, /guard --event pre-push/);

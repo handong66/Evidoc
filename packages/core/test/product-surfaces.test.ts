@@ -4,17 +4,17 @@ import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const requiredPackages = [
-  ["core", "@handong66/evidoc-core"],
-  ["cli", "@handong66/evidoc-cli"],
-  ["reports", "@handong66/evidoc-reports"],
-  ["github-action", "@handong66/evidoc-github-action"],
-  ["mcp-server", "@handong66/evidoc-mcp-server"],
-  ["graph", "@handong66/evidoc-graph"],
-  ["frontmatter", "@handong66/evidoc-frontmatter"],
-  ["patcher", "@handong66/evidoc-patcher"],
-  ["dashboard", "@handong66/evidoc-dashboard"],
-  ["local-app", "@handong66/evidoc-local-app"],
-  ["review-log", "@handong66/evidoc-review-log"]
+  ["core", "@evidoc/core"],
+  ["cli", "@evidoc/cli"],
+  ["reports", "@evidoc/reports"],
+  ["github-action", "@evidoc/github-action"],
+  ["mcp-server", "@evidoc/mcp-server"],
+  ["graph", "@evidoc/graph"],
+  ["frontmatter", "@evidoc/frontmatter"],
+  ["patcher", "@evidoc/patcher"],
+  ["dashboard", "@evidoc/dashboard"],
+  ["local-app", "@evidoc/local-app"],
+  ["review-log", "@evidoc/review-log"]
 ] as const;
 
 test("declares every full-product package surface", async () => {

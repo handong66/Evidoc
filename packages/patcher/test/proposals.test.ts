@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import type { DriftReport } from "@handong66/evidoc-core";
+import type { DriftReport } from "@evidoc/core";
 import {
   createLlmPatchRequest,
   createPatchProposals,

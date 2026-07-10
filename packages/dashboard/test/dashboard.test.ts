@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createDashboardSnapshot } from "../src/index.js";
-import type { DriftReport } from "@handong66/evidoc-core";
+import type { DriftReport } from "@evidoc/core";
 
 test("creates a dashboard snapshot from a drift report", () => {
   const report: DriftReport = {

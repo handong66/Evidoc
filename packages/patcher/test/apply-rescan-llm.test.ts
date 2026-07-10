@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { checkRepository } from "@handong66/evidoc-core";
+import { checkRepository } from "@evidoc/core";
 import {
   applyPatchProposal,
   callOpenAiCompatiblePatchProvider,

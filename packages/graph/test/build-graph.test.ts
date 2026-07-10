@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildDriftGraph } from "../src/index.js";
-import type { DriftReport } from "@handong66/evidoc-core";
+import type { DriftReport } from "@evidoc/core";
 
 test("builds document, source, symbol, API, and rule nodes from a report", () => {
   const report: DriftReport = {

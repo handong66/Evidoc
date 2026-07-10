@@ -54,9 +54,9 @@ test("init creates config and GitHub workflow for zero-friction onboarding", asy
   assert.equal(existsSync(join(root, ".evidoc", ".gitignore")), true);
   assert.equal(existsSync(join(root, ".github", "workflows", "evidoc.yml")), true);
   assert.match(stdout, /Evidoc initialized/);
-  assert.match(stdout, /npx repo-evidoc check/);
+  assert.match(stdout, /npx evidoc check/);
   assert.match(stdout, /Source checkout fallback/);
-  assert.ok(stdout.includes(`npx repo-evidoc check --root ${shellArg(root)} --fail-on=review_needed`));
+  assert.ok(stdout.includes(`npx evidoc check --root ${shellArg(root)} --fail-on=review_needed`));
   assert.ok(stdout.includes(`npm run evidoc -- check --root ${root} --fail-on=review_needed`));
   assert.match(stdout, /git add \.evidoc\/config\.json \.evidoc\/\.gitignore \.github\/workflows\/evidoc\.yml/);
   assert.doesNotMatch(stdout, /git add \.evidoc \.github/);
@@ -237,7 +237,7 @@ test("init next commands quote repository roots with shell-special characters", 
   });
 
   assert.equal(exitCode, 0);
-  assert.ok(stdout.includes(`npx repo-evidoc check --root ${shellArg(root)} --fail-on=review_needed`));
+  assert.ok(stdout.includes(`npx evidoc check --root ${shellArg(root)} --fail-on=review_needed`));
   assert.ok(stdout.includes(`npm run evidoc -- check --root ${shellArg(root)} --fail-on=review_needed`));
 });
 
@@ -298,9 +298,9 @@ test("doctor reports missing and ready onboarding state", async () => {
 
   assert.equal(missingExitCode, 1);
   assert.match(stdout, /not initialized/i);
-  assert.match(stdout, /npx repo-evidoc init --yes/);
+  assert.match(stdout, /npx evidoc init --yes/);
   assert.match(stdout, /Source checkout fallback/);
-  assert.ok(stdout.includes(`npx repo-evidoc init --yes --root ${shellArg(root)}`));
+  assert.ok(stdout.includes(`npx evidoc init --yes --root ${shellArg(root)}`));
   assert.ok(stdout.includes(`npm run evidoc -- init --yes --root ${shellArg(root)}`));
 
   await runCli(["init", "--yes"], {
@@ -324,7 +324,7 @@ test("doctor reports missing and ready onboarding state", async () => {
   assert.match(stdout, /GitHub Action/i);
   assert.doesNotMatch(stdout, /Local Git Gate issues:/);
   assert.doesNotMatch(stdout, /Warnings:/);
-  assert.ok(stdout.includes(`npx repo-evidoc check --root ${shellArg(root)} --fail-on=review_needed`));
+  assert.ok(stdout.includes(`npx evidoc check --root ${shellArg(root)} --fail-on=review_needed`));
   assert.ok(stdout.includes(`npm run evidoc -- check --root ${shellArg(root)} --fail-on=review_needed`));
 });
 

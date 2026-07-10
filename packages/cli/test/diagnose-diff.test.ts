@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { fingerprintFileContent } from "@handong66/evidoc-core";
+import { fingerprintFileContent } from "@evidoc/core";
 import { runCli } from "../src/index.js";
 
 const execFileAsync = promisify(execFile);

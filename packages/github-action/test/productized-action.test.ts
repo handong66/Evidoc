@@ -67,7 +67,7 @@ test("composite action does not turn PRs green with uncommitted auto-fixes", asy
   assert.match(previewStep, /\[ "\$rc" = "0" \] && \[ "\$preview_count" = "0" \] && exit 0/);
   assert.match(action, /Evidoc previewed \$preview_count safe fix candidate/);
   assert.match(previewStep, /::warning::Evidoc safe auto-fix preview found \$preview_count safe fix candidate/);
-  assert.match(action, /npx repo-evidoc fix --safe --write --json --root <target-repository-root>/);
+  assert.match(action, /npx evidoc fix --safe --write --json --root <target-repository-root>/);
 });
 
 test("composite action restores submitted report when auto-commit cannot push applied fixes", async () => {
@@ -90,7 +90,7 @@ test("composite action restores submitted report when auto-commit cannot push ap
   assert.match(restoreStep, /Auto-commit did not update the PR branch/);
   assert.match(restoreStep, /Evidoc applied \$applied_count safe fix candidate/);
   assert.match(restoreStep, /The report below reflects the PR as submitted/);
-  assert.match(restoreStep, /npx repo-evidoc fix --safe --write --json --root <target-repository-root>/);
+  assert.match(restoreStep, /npx evidoc fix --safe --write --json --root <target-repository-root>/);
   assert.ok(
     action.indexOf("- name: Back up submitted PR report before auto-commit") <
       action.indexOf("- name: Refresh report after safe fixes")
@@ -174,7 +174,7 @@ test("composite action bootstraps from the GitHub action checkout without npm pu
   assert.match(action, /For the default branch, use \\`since: \$suggested_since\\`/);
   assert.match(action, /changed-only: "false"/);
   assert.match(action, /--since "\$suggested_since"/);
-  assert.doesNotMatch(action, /npx repo-evidoc check --changed-only --since "\$INPUT_SINCE"/);
+  assert.doesNotMatch(action, /npx evidoc check --changed-only --since "\$INPUT_SINCE"/);
   assert.match(action, /EVIDOC_CHANGED_ONLY=false/);
   assert.match(action, /EVIDOC_BASELINE_WARNING=true/);
   assert.match(action, /tail -n \+2 \.evidoc\/reports\/summary\.md/);

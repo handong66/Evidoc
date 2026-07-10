@@ -6,7 +6,7 @@ import {
   parseReviewLog,
   serializeReviewLogEntry
 } from "../src/index.js";
-import type { DriftFinding } from "@handong66/evidoc-core";
+import type { DriftFinding } from "@evidoc/core";
 
 const finding: DriftFinding = {
   id: "README.md:1:path.missing-reference",

@@ -63,7 +63,7 @@ test("declares current open-source, privacy, and security policy", async () => {
   const minor = rootManifest.version.split(".").slice(0, 2).join(".");
 
   assert.match(changelog, /Semantic Versioning/);
-  assert.match(changelog, /npx repo-evidoc/);
+  assert.match(changelog, /npx evidoc/);
   assert.match(privacy, /Telemetry is disabled by default/);
   assert.match(privacy, /must not include repository content/);
   assert.match(security, new RegExp(`\\| ${minor.replace(".", "\\.")}\\.x \\| Yes \\|`));
@@ -162,7 +162,7 @@ test("release pipeline verifies versions, package identity, and registry state b
   assert.match(smoke, /"fix"/);
   const verifier = await readFile(join(root, "scripts/verify-release-version.mjs"), "utf8");
   assert.match(verifier, /Public package directories changed/);
-  assert.match(verifier, /\["evidoc", "repo-evidoc"\]/);
+  assert.match(verifier, /\["evidoc", "evidoc"\]/);
 
   for (const source of [workflow, action]) {
     for (const match of source.matchAll(/^\s*uses:\s*([^\s#]+)/gm)) {
@@ -210,7 +210,7 @@ test("README leads with one read-only check and a focused product definition", a
 
   assert.match(firstScreen, /repo-local evidence gate for stale documentation and coding-agent instructions/);
   assert.match(firstScreen, /## One-Minute Check/);
-  assert.match(firstScreen, /npx repo-evidoc check --fail-on=review_needed/);
+  assert.match(firstScreen, /npx evidoc check --fail-on=review_needed/);
   assert.match(firstScreen, /This first check is read-only/);
   assert.match(firstScreen, /deterministic analyzer is the engine/);
   assert.match(firstScreen, /Agent Runtime Contract/);
