@@ -58,9 +58,9 @@ jobs:
             packages/graph
             packages/frontmatter
             packages/dashboard
+            packages/patcher
             packages/local-app
             packages/review-log
-            packages/patcher
             packages/mcp-server
             packages/github-action
             packages/cli

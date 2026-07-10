@@ -16,12 +16,10 @@ test("recognizes source-checkout Evidoc CLI workflows", () => {
     "npm run --silent evidoc -- --fail-on=review_needed",
     "npm run --prefix packages/cli evidoc -- --fail-on=review_needed",
     "npx evidoc check --fail-on=review_needed",
-    "npx evidoc check --fail-on=review_needed",
     "pnpm evidoc --fail-on=review_needed",
     "pnpm run evidoc --fail-on=review_needed",
     "pnpm --filter . run evidoc --fail-on=review_needed",
     "pnpm exec evidoc check --fail-on=review_needed",
-    "pnpm dlx evidoc check --fail-on=review_needed",
     "pnpm dlx evidoc check --fail-on=review_needed",
     "yarn evidoc --fail-on=review_needed",
     "yarn run evidoc --fail-on=review_needed",
@@ -29,9 +27,7 @@ test("recognizes source-checkout Evidoc CLI workflows", () => {
     "yarn exec evidoc --fail-on=review_needed",
     "yarn --cwd . exec evidoc --fail-on=review_needed",
     "yarn dlx evidoc check --fail-on=review_needed",
-    "yarn dlx evidoc check --fail-on=review_needed",
     "bun run evidoc --fail-on=review_needed",
-    "bunx evidoc check --fail-on=review_needed",
     "bunx evidoc check --fail-on=review_needed",
     "evidoc check --fail-on=review_needed"
   ];
@@ -54,6 +50,16 @@ test("recognizes source-checkout Evidoc CLI workflows", () => {
       command
     );
   }
+});
+
+test("does not recognize the removed launcher package", () => {
+  const removedLauncher = ["repo", "evidoc"].join("-");
+  assert.equal(
+    isEvidocWorkflowText(
+      ["jobs:", "  test:", "    steps:", `      - run: npx ${removedLauncher} check`, ""].join("\n")
+    ),
+    false
+  );
 });
 
 test("recognizes source-checkout Evidoc CLI workflows in shell blocks", () => {

@@ -147,6 +147,22 @@ test("release pipeline verifies versions, package identity, and registry state b
   assert.match(workflow, /openssl dgst -sha512 -binary/);
   assert.match(workflow, /packages\/core/);
   assert.match(workflow, /packages\/evidoc/);
+  const packageOrderBlock = workflow.match(/package_dirs=\(\n([\s\S]*?)\n\s+\)/)?.[1];
+  assert.ok(packageOrderBlock, "release workflow is missing package_dirs");
+  const publishDirectories = [...packageOrderBlock.matchAll(/packages\/([a-z-]+)/g)].map((match) => match[1]);
+  const manifests = await workspaceManifests();
+  const directoryByPackageName = new Map(manifests.map(({ directory, manifest }) => [manifest.name, directory]));
+  assert.deepEqual([...publishDirectories].sort(), manifests.map(({ directory }) => directory).sort());
+  for (const { directory, manifest } of manifests) {
+    for (const dependency of Object.keys(manifest.dependencies ?? {})) {
+      const dependencyDirectory = directoryByPackageName.get(dependency);
+      if (!dependencyDirectory) continue;
+      assert.ok(
+        publishDirectories.indexOf(dependencyDirectory) < publishDirectories.indexOf(directory),
+        `${dependencyDirectory} must publish before ${directory}`
+      );
+    }
+  }
   assert.match(workflow, /tarball="\.evidoc\/release\/\$\{tarball_name\}"/);
   assert.match(workflow, /npm publish "\$tarball" --access public/);
   assert.doesNotMatch(workflow, /npm publish "\.\/\$\{package_dir\}"/);

@@ -327,7 +327,7 @@ function isEvidocCommand(command: string): boolean {
 }
 
 function hasEvidocPackageToken(tokens: string[]): boolean {
-  return tokens.includes("evidoc") || tokens.includes("evidoc");
+  return tokens.includes("evidoc");
 }
 
 function commandUsesAdvisoryFailOn(command: string): boolean {
