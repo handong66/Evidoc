@@ -17,6 +17,30 @@ async function workspaceManifests(): Promise<Array<{ directory: string; manifest
   return manifests;
 }
 
+async function repositoryTextFiles(directory = root): Promise<string[]> {
+  const ignoredDirectories = new Set([
+    ".evidoc",
+    ".git",
+    ".opencode-plugin-codex",
+    ".worktrees",
+    "dist",
+    "node_modules"
+  ]);
+  const textExtensions = new Set([".json", ".md", ".mjs", ".ts", ".yaml", ".yml"]);
+  const files: string[] = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    if (entry.isSymbolicLink()) continue;
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (!ignoredDirectories.has(entry.name)) files.push(...(await repositoryTextFiles(path)));
+      continue;
+    }
+    const extension = entry.name.slice(entry.name.lastIndexOf("."));
+    if (textExtensions.has(extension)) files.push(path);
+  }
+  return files;
+}
+
 function markdownSection(text: string, heading: string): string {
   const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const startMatch = new RegExp(`^## ${escaped}\\n`, "m").exec(text);
@@ -52,9 +76,26 @@ test("keeps all published package manifests synchronized and identifiable", asyn
   const rootManifest = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
   const packages = await workspaceManifests();
   const workspaceNames = new Set(packages.map(({ manifest }) => manifest.name));
+  const expectedPackageNames = new Map([
+    ["cli", "@evidoc/cli"],
+    ["core", "@evidoc/core"],
+    ["dashboard", "@evidoc/dashboard"],
+    ["evidoc", "evidoc"],
+    ["frontmatter", "@evidoc/frontmatter"],
+    ["github-action", "@evidoc/github-action"],
+    ["graph", "@evidoc/graph"],
+    ["local-app", "@evidoc/local-app"],
+    ["mcp-server", "@evidoc/mcp-server"],
+    ["patcher", "@evidoc/patcher"],
+    ["reports", "@evidoc/reports"],
+    ["review-log", "@evidoc/review-log"]
+  ]);
 
   assert.equal(packages.length, 12);
+  assert.equal(rootManifest.name, "@evidoc/repo");
+  assert.equal(rootManifest.private, true);
   for (const { directory, manifest } of packages) {
+    assert.equal(manifest.name, expectedPackageNames.get(directory), directory);
     assert.equal(manifest.version, rootManifest.version, manifest.name);
     assert.equal(manifest.scripts?.prepublishOnly, "node ../../scripts/ensure-built-package.mjs", manifest.name);
     assert.deepEqual(manifest.files, ["dist/src", "README.md", "LICENSE"], manifest.name);
@@ -65,9 +106,26 @@ test("keeps all published package manifests synchronized and identifiable", asyn
     }
   }
 
-  const wrapper = packages.find(({ manifest }) => manifest.name === "repo-evidoc")?.manifest;
+  const wrapper = packages.find(({ manifest }) => manifest.name === "evidoc")?.manifest;
+  const mcp = packages.find(({ manifest }) => manifest.name === "@evidoc/mcp-server")?.manifest;
   assert.equal(wrapper?.bin?.evidoc, "dist/src/index.js");
   assert.equal(wrapper?.engines?.node, ">=22");
+  assert.equal(mcp?.bin?.["evidoc-mcp"], "dist/src/index.js");
+});
+
+test("contains no stale npm scope, launcher package, or MCP executable identity", async () => {
+  const legacyScope = ["@handong66", "evidoc-"].join("/");
+  const legacyLauncher = ["repo", "evidoc"].join("-");
+  const staleReferences: string[] = [];
+
+  for (const path of await repositoryTextFiles()) {
+    const text = await readFile(path, "utf8");
+    if (text.includes(legacyScope) || text.includes(legacyLauncher)) {
+      staleReferences.push(path.slice(root.length + 1));
+    }
+  }
+
+  assert.deepEqual(staleReferences, []);
 });
 
 test("release pipeline verifies versions, package identity, and registry state before publishing", async () => {
