@@ -63,7 +63,7 @@ test("declares current open-source, privacy, and security policy", async () => {
   const minor = rootManifest.version.split(".").slice(0, 2).join(".");
 
   assert.match(changelog, /Semantic Versioning/);
-  assert.match(changelog, /npx evidoc/);
+  assert.match(changelog, /npx @evidoc\/evidoc/);
   assert.match(privacy, /Telemetry is disabled by default/);
   assert.match(privacy, /must not include repository content/);
   assert.match(security, new RegExp(`\\| ${minor.replace(".", "\\.")}\\.x \\| Yes \\|`));
@@ -80,7 +80,7 @@ test("keeps all published package manifests synchronized and identifiable", asyn
     ["cli", "@evidoc/cli"],
     ["core", "@evidoc/core"],
     ["dashboard", "@evidoc/dashboard"],
-    ["evidoc", "evidoc"],
+    ["evidoc", "@evidoc/evidoc"],
     ["frontmatter", "@evidoc/frontmatter"],
     ["github-action", "@evidoc/github-action"],
     ["graph", "@evidoc/graph"],
@@ -106,7 +106,7 @@ test("keeps all published package manifests synchronized and identifiable", asyn
     }
   }
 
-  const wrapper = packages.find(({ manifest }) => manifest.name === "evidoc")?.manifest;
+  const wrapper = packages.find(({ manifest }) => manifest.name === "@evidoc/evidoc")?.manifest;
   const mcp = packages.find(({ manifest }) => manifest.name === "@evidoc/mcp-server")?.manifest;
   assert.equal(wrapper?.bin?.evidoc, "dist/src/index.js");
   assert.equal(wrapper?.engines?.node, ">=22");
@@ -116,11 +116,12 @@ test("keeps all published package manifests synchronized and identifiable", asyn
 test("contains no stale npm scope, launcher package, or MCP executable identity", async () => {
   const legacyScope = ["@handong66", "evidoc-"].join("/");
   const legacyLauncher = ["repo", "evidoc"].join("-");
+  const blockedNpxLauncher = ["npx", "evidoc"].join(" ");
   const staleReferences: string[] = [];
 
   for (const path of await repositoryTextFiles()) {
     const text = await readFile(path, "utf8");
-    if (text.includes(legacyScope) || text.includes(legacyLauncher)) {
+    if (text.includes(legacyScope) || text.includes(legacyLauncher) || text.includes(blockedNpxLauncher)) {
       staleReferences.push(path.slice(root.length + 1));
     }
   }
@@ -184,7 +185,7 @@ test("release pipeline verifies versions, package identity, and registry state b
   const verifier = await readFile(join(root, "scripts/verify-release-version.mjs"), "utf8");
   assert.match(verifier, /Public package directories changed/);
   assert.match(verifier, /\["core", "@evidoc\/core"\]/);
-  assert.match(verifier, /\["evidoc", "evidoc"\]/);
+  assert.match(verifier, /\["evidoc", "@evidoc\/evidoc"\]/);
 
   for (const source of [workflow, action]) {
     for (const match of source.matchAll(/^\s*uses:\s*([^\s#]+)/gm)) {
@@ -232,7 +233,7 @@ test("README leads with one read-only check and a focused product definition", a
 
   assert.match(firstScreen, /repo-local evidence gate for stale documentation and coding-agent instructions/);
   assert.match(firstScreen, /## One-Minute Check/);
-  assert.match(firstScreen, /npx evidoc check --fail-on=review_needed/);
+  assert.match(firstScreen, /npx @evidoc\/evidoc check --fail-on=review_needed/);
   assert.match(firstScreen, /This first check is read-only/);
   assert.match(firstScreen, /deterministic analyzer is the engine/);
   assert.match(firstScreen, /Agent Runtime Contract/);

@@ -1,2 +1,2 @@
 /** Version shared by runtime surfaces; release verification keeps this aligned with package manifests. */
-export const EVIDOC_VERSION = "0.3.0";
+export const EVIDOC_VERSION = "0.3.1";

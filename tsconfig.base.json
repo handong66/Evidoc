@@ -8,7 +8,7 @@
       "@evidoc/core": ["packages/core/src/index.ts"],
       "@evidoc/cli": ["packages/cli/src/index.ts"],
       "@evidoc/dashboard": ["packages/dashboard/src/index.ts"],
-      "evidoc": ["packages/evidoc/src/index.ts"],
+      "@evidoc/evidoc": ["packages/evidoc/src/index.ts"],
       "@evidoc/frontmatter": ["packages/frontmatter/src/index.ts"],
       "@evidoc/github-action": ["packages/github-action/src/index.ts"],
       "@evidoc/graph": ["packages/graph/src/index.ts"],

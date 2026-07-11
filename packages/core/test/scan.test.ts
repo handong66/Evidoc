@@ -59,7 +59,7 @@ test("reports npx commands that conflict with the repository package manager", a
 test("does not report scoped external npx packages as repository package-manager drift", async () => {
   const root = await fixture();
   await write(root, "package.json", JSON.stringify({ packageManager: "npm@10.0.0", scripts: { test: "node --test" } }));
-  await write(root, "README.md", "Install with `npx evidoc` or `npx -p @evidoc/mcp-server evidoc-mcp`.\n");
+  await write(root, "README.md", "Install with `npx @evidoc/evidoc` or `npx -p @evidoc/mcp-server evidoc-mcp`.\n");
 
   const report = await checkRepository(root);
 

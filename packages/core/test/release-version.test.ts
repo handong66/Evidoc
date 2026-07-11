@@ -35,6 +35,6 @@ test("release notes are selected from the current package version rather than Un
   });
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, new RegExp(`^# Evidoc ${version.replaceAll(".", "\\.")} - 2026-07-10`, "m"));
+  assert.match(result.stdout, new RegExp(`^# Evidoc ${version.replaceAll(".", "\\.")} - \\d{4}-\\d{2}-\\d{2}$`, "m"));
   assert.doesNotMatch(result.stdout, /Evidoc Unreleased/);
 });

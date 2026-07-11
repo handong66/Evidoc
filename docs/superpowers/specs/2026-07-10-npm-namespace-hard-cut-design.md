@@ -10,10 +10,10 @@ Move Evidoc to one public npm identity with no compatibility layer. The user-fac
 
 ## Decisions
 
-- Publish the user-facing package as `evidoc` at version `0.3.0`.
-- Keep the installed CLI command as `evidoc`; the documented one-shot path is `npx evidoc`.
+- Publish the user-facing package as `evidoc` at version `0.3.1`.
+- Keep the installed CLI command as `evidoc`; publish the full-product entrypoint as `@evidoc/evidoc`; the documented one-shot path is `npx @evidoc/evidoc`.
 - Publish the MCP executable as `evidoc-mcp`.
-- Publish all workspace packages at the same `0.3.0` version.
+- Publish all workspace packages at the same `0.3.1` version.
 - Do not ship aliases, forwarding packages, compatibility bins, or dual dependency names.
 - Do not unpublish historical npm artifacts. After all replacements are verified, mark the historical packages deprecated with a concise pointer to the corresponding new package.
 - Keep the GitHub repository owner and repository URLs unchanged. This migration changes npm identities, not GitHub ownership.
@@ -23,7 +23,7 @@ Move Evidoc to one public npm identity with no compatibility layer. The user-fac
 | Workspace | New identity |
 | --- | --- |
 | repository root | `@evidoc/repo` (private) |
-| `packages/evidoc` | `evidoc` |
+| `packages/evidoc` | `@evidoc/evidoc` |
 | `packages/cli` | `@evidoc/cli` |
 | `packages/core` | `@evidoc/core` |
 | `packages/dashboard` | `@evidoc/dashboard` |
@@ -40,7 +40,7 @@ Move Evidoc to one public npm identity with no compatibility layer. The user-fac
 
 The migration covers all package manifests and workspace dependency edges; TypeScript imports and exports; package-lock workspace links; CLI and MCP executable references; generated onboarding and GitHub Action snippets; Local App copy; tests and fixtures; release allowlists, version checks, tarball naming, smoke tests, release notes, badges, and public documentation.
 
-The GitHub Action remains sourced from the current GitHub repository path. Its generated examples pin the exact `v0.3.0` release tag. After the release passes npm and GitHub verification, the floating Action tag `v0` moves to the same commit as `v0.3.0`.
+The GitHub Action remains sourced from the current GitHub repository path. Its generated examples pin the exact `v0.3.1` release tag. After the release passes npm and GitHub verification, the floating Action tag `v0` moves to the same commit as `v0.3.1`.
 
 ## Single-Truth Rules
 
@@ -52,14 +52,14 @@ The GitHub Action remains sourced from the current GitHub repository path. Its g
 
 ## Release Sequence
 
-1. Land and verify the repository migration at `0.3.0` without publishing.
+1. Land and verify the repository migration at `0.3.1` without publishing.
 2. Pack all twelve public packages from the verified commit and run tarball-level installation and command smoke tests in temporary directories.
 3. Bootstrap the new npm package records using the authenticated owner account, publishing in dependency order.
 4. Configure Trusted Publishing independently for every new package and bind it to the repository release workflow.
-5. Re-run or resume the `v0.3.0` release only after the package records and trusted publishers are consistent. The workflow must refuse partial or mismatched releases.
+5. Re-run or resume the `v0.3.1` release only after the package records and trusted publishers are consistent. The workflow must refuse partial or mismatched releases.
 6. Verify registry metadata, tarball contents, executable behavior, GitHub Release assets, checksums, and release CI.
 7. Deprecate historical package identities only after every replacement is publicly installable.
-8. Move the GitHub Action `v0` tag to the verified `v0.3.0` commit.
+8. Move the GitHub Action `v0` tag to the verified `v0.3.1` commit.
 
 ## Failure Handling
 
@@ -77,7 +77,7 @@ The implementation is complete only when all of the following pass from a clean 
 - `npm ci`
 - `npm test`
 - `npm run build`
-- `npm run release:verify -- --tag v0.3.0`
+- `npm run release:verify -- --tag v0.3.1`
 - Package all workspaces into `.evidoc/release` and verify the expected twelve tarballs.
 - `npm run release:smoke:npx -- .evidoc/release`
 - Install the packed launcher in a temporary directory and run `npx --no-install evidoc --version`, `doctor`, `check`, `diagnose`, `demo`, and one-shot Local App scans.
@@ -88,11 +88,11 @@ The implementation is complete only when all of the following pass from a clean 
 
 ## Acceptance Criteria
 
-- `npm view evidoc@0.3.0` and every `@evidoc/*@0.3.0` package return the expected repository metadata and dependency names.
-- `npx evidoc@0.3.0 --version` reports `0.3.0` in a clean temporary directory.
-- `npx @evidoc/mcp-server@0.3.0` exposes only the new MCP executable identity and starts successfully under its documented contract.
+- `npm view evidoc@0.3.1` and every `@evidoc/*@0.3.1` package return the expected repository metadata and dependency names.
+- `npx @evidoc/evidoc@0.3.1 --version` reports `0.3.1` in a clean temporary directory.
+- `npx @evidoc/mcp-server@0.3.1` exposes only the new MCP executable identity and starts successfully under its documented contract.
 - The public README, onboarding, generated workflow, CLI, MCP, Local App, package metadata, release verifier, and tarball smoke tests all name the same product and package set.
-- GitHub Actions for the release commit are green, the GitHub Release contains exactly the verified tarballs, and floating Action tag `v0` resolves to the exact `v0.3.0` commit.
+- GitHub Actions for the release commit are green, the GitHub Release contains exactly the verified tarballs, and floating Action tag `v0` resolves to the exact `v0.3.1` commit.
 - Historical packages are deprecated only after all replacement checks pass; no compatibility code remains in the repository.
 
 ## OpenCode Boundary

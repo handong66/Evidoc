@@ -4,7 +4,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Publish Evidoc `0.3.0` under the unscoped `evidoc` launcher and the `@evidoc` organization with no compatibility layer or stale repository identity.
+**Goal:** Publish Evidoc `0.3.1` under the unscoped `evidoc` launcher and the `@evidoc` organization with no compatibility layer or stale repository identity.
 
 **Architecture:** Workspace manifests define the package graph; contract tests enforce the allowed package set, aligned version, launcher/MCP bins, and absence of legacy identities. Release verification, tarball smoke tests, generated onboarding, and documentation consume the same identities and are validated before first publication in dependency order.
 
@@ -12,9 +12,9 @@
 
 ## Global Constraints
 
-- Public version is exactly `0.3.0` for all twelve publishable packages and runtime version constants.
+- Public version is exactly `0.3.1` for all twelve publishable packages and runtime version constants.
 - Root workspace identity is `@evidoc/repo` and remains private.
-- User package and executable are `evidoc`; documented one-shot command is `npx evidoc`.
+- The full-product entry package is `@evidoc/evidoc`, its executable is `evidoc`, and the documented one-shot command is `npx @evidoc/evidoc`.
 - MCP package is `@evidoc/mcp-server`; executable is `evidoc-mcp`.
 - No aliases, forwarding packages, compatibility bins, or dual dependency names.
 - GitHub ownership and repository URLs remain `handong66/Evidoc`.
@@ -31,7 +31,7 @@
 
 **Interfaces:**
 - Consumes: workspace manifests under `packages/*/package.json` and root `package.json`.
-- Produces: an executable contract for the exact package map, `0.3.0` alignment, launcher/MCP bins, private root, and stale-identity rejection.
+- Produces: an executable contract for the exact package map, `0.3.1` alignment, launcher/MCP bins, private root, and stale-identity rejection.
 
 - [ ] **Step 1: Write failing identity assertions**
 
@@ -42,7 +42,7 @@ const expectedPackageNames = new Map([
   ["cli", "@evidoc/cli"],
   ["core", "@evidoc/core"],
   ["dashboard", "@evidoc/dashboard"],
-  ["evidoc", "evidoc"],
+  ["evidoc", "@evidoc/evidoc"],
   ["frontmatter", "@evidoc/frontmatter"],
   ["github-action", "@evidoc/github-action"],
   ["graph", "@evidoc/graph"],
@@ -74,7 +74,7 @@ git add packages/core/test/open-source-surface.test.ts
 git commit -m "test: define Evidoc npm identity contract"
 ```
 
-### Task 2: Rename the workspace graph and align version 0.3.0
+### Task 2: Rename the workspace graph and align version 0.3.1
 
 **Files:**
 - Modify: `package.json`
@@ -107,7 +107,7 @@ git commit -m "test: define Evidoc npm identity contract"
 
 **Interfaces:**
 - Consumes: the Task 1 expected package map.
-- Produces: a buildable workspace graph whose internal dependencies use exact `0.3.0` pins and new npm identities.
+- Produces: a buildable workspace graph whose internal dependencies use exact `0.3.1` pins and new npm identities.
 
 - [ ] **Step 1: Update manifest identities, bins, and versions**
 
@@ -116,12 +116,12 @@ Set root metadata to:
 ```json
 {
   "name": "@evidoc/repo",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true
 }
 ```
 
-Set every workspace manifest to its Task 1 name and `0.3.0`. Replace every internal dependency with its `@evidoc/*` name and exact `0.3.0`. Keep the launcher bin as `evidoc`; rename the MCP bin to `evidoc-mcp`.
+Set every workspace manifest to its Task 1 name and `0.3.1`. Replace every internal dependency with its `@evidoc/*` name and exact `0.3.1`. Keep the launcher bin as `evidoc`; rename the MCP bin to `evidoc-mcp`.
 
 - [ ] **Step 2: Update TypeScript path aliases and source imports**
 
@@ -130,14 +130,14 @@ Replace workspace aliases in `tsconfig.base.json` with `@evidoc/*` keys. Update 
 - [ ] **Step 3: Update the runtime version**
 
 ```ts
-export const EVIDOC_VERSION = "0.3.0";
+export const EVIDOC_VERSION = "0.3.1";
 ```
 
 - [ ] **Step 4: Regenerate only the npm lockfile metadata**
 
 Run: `npm install --package-lock-only --ignore-scripts`
 
-Expected: exit 0; `package-lock.json` workspace entries and links use only the new identities and `0.3.0`.
+Expected: exit 0; `package-lock.json` workspace entries and links use only the new identities and `0.3.1`.
 
 - [ ] **Step 5: Build and run the identity contract**
 
@@ -179,7 +179,7 @@ git commit -m "refactor: move packages to the Evidoc namespace"
 
 - [ ] **Step 1: Change test expectations first**
 
-Update fixtures and assertions so generated shell commands use `npx evidoc`, imports use `@evidoc/*`, and MCP examples use `@evidoc/mcp-server` plus `evidoc-mcp`. Preserve GitHub Action source references as `handong66/Evidoc/packages/github-action@v0.3.0`.
+Update fixtures and assertions so generated shell commands use `npx @evidoc/evidoc`, imports use `@evidoc/*`, and MCP examples use `@evidoc/mcp-server` plus `evidoc-mcp`. Preserve GitHub Action source references as `handong66/Evidoc/packages/github-action@v0.3.1`.
 
 - [ ] **Step 2: Run focused tests and confirm failures**
 
@@ -215,12 +215,12 @@ git commit -m "feat: expose the Evidoc package identity"
 - Modify: `packages/core/test/open-source-surface.test.ts`
 
 **Interfaces:**
-- Consumes: package manifests and `0.3.0` runtime version.
+- Consumes: package manifests and `0.3.1` runtime version.
 - Produces: deterministic package-set verification, dependency-ordered publishing, launcher discovery, and resumable registry-state checks.
 
 - [ ] **Step 1: Write failing release-contract assertions**
 
-Assert that release verification accepts exactly the Task 1 map, tag `v0.3.0`, and no private root publication. Assert that smoke tests identify `evidoc-0.3.0.tgz`, execute `npx --no-install evidoc`, require twelve tarballs, and check `evidoc-mcp` metadata.
+Assert that release verification accepts exactly the Task 1 map, tag `v0.3.1`, and no private root publication. Assert that smoke tests identify `evidoc-evidoc-0.3.1.tgz`, execute `npx --no-install evidoc`, require twelve tarballs, and check `evidoc-mcp` metadata.
 
 - [ ] **Step 2: Run release tests and confirm failure**
 
@@ -239,17 +239,17 @@ In `.github/workflows/release.yml`, preserve dependency order and immutable arti
 - [ ] **Step 5: Run release verification and local tarball smoke**
 
 ```bash
-npm run release:verify -- --tag v0.3.0
+npm run release:verify -- --tag v0.3.1
 npm run release:smoke:npx
 ```
 
-Expected: `Release version verified: 0.3.0 across 12 packages for v0.3.0.` and an `npx evidoc smoke passed` summary.
+Expected: `Release version verified: 0.3.1 across 12 packages for v0.3.1.` and an `npx @evidoc/evidoc smoke passed` summary.
 
 - [ ] **Step 6: Commit release machinery**
 
 ```bash
 git add scripts .github/workflows/release.yml packages/core/test
-git commit -m "release: verify Evidoc 0.3.0 artifacts"
+git commit -m "release: verify Evidoc 0.3.1 artifacts"
 ```
 
 ### Task 5: Synchronize documentation, examples, changelog, and package READMEs
@@ -284,7 +284,7 @@ git commit -m "release: verify Evidoc 0.3.0 artifacts"
 
 - [ ] **Step 1: Update documentation tests**
 
-Require first-screen onboarding to use `npx evidoc check --fail-on=review_needed`, badges to target `evidoc`, MCP setup to use `@evidoc/mcp-server`, and release instructions to use `v0.3.0` plus the floating Action tag `v0` only after verification.
+Require first-screen onboarding to use `npx @evidoc/evidoc check --fail-on=review_needed`, badges to target `@evidoc/evidoc`, MCP setup to use `@evidoc/mcp-server`, and release instructions to use `v0.3.1` plus the floating Action tag `v0` only after verification.
 
 - [ ] **Step 2: Run documentation contracts and confirm failure**
 
@@ -294,7 +294,7 @@ Expected: FAIL until every public surface is migrated.
 
 - [ ] **Step 3: Rewrite public documentation and package READMEs**
 
-Keep product claims unchanged; change only package, command, version, release, and installation identities. Add a `0.3.0` changelog section describing the intentional pre-user hard cut and new npm organization.
+Keep product claims unchanged; change only package, command, version, release, and installation identities. Add a `0.3.1` changelog section describing the intentional pre-user hard cut and new npm organization.
 
 - [ ] **Step 4: Run documentation and stale-identity gates**
 
@@ -330,7 +330,7 @@ git commit -m "docs: publish the Evidoc npm identity"
 ```bash
 npm ci
 npm test
-npm run release:verify -- --tag v0.3.0
+npm run release:verify -- --tag v0.3.1
 npm run release:smoke:npx
 npm run evidoc -- --fail-on=review_needed
 git diff --check
@@ -364,15 +364,15 @@ Expected: all Task 6 Step 1 commands remain green and the stale scan remains emp
 
 ```bash
 git add -A
-git commit -m "release: prepare Evidoc 0.3.0 namespace"
+git commit -m "release: prepare Evidoc 0.3.1 namespace"
 ```
 
-### Task 7: Bootstrap npm packages and publish v0.3.0
+### Task 7: Bootstrap npm packages and publish v0.3.1
 
 **Files/External state:**
 - npm packages: `evidoc` and eleven `@evidoc/*` packages
 - npm Trusted Publisher settings for each new package
-- GitHub tag/release: `v0.3.0`
+- GitHub tag/release: `v0.3.1`
 - GitHub Action floating tag: `v0`
 - Historical package deprecation metadata
 
@@ -386,7 +386,7 @@ Confirm a clean worktree and push `main` to `origin`. Wait for the exact commit'
 
 - [ ] **Step 2: Verify npm publication preconditions**
 
-Confirm all target names at version `0.3.0` return registry `E404`, npm owner is `handong66`, organization is `evidoc`, and 2FA is enabled. Refresh CLI authentication without printing tokens.
+Confirm all target names at version `0.3.1` return registry `E404`, npm owner is `handong66`, organization is `evidoc`, and 2FA is enabled. Refresh CLI authentication without printing tokens.
 
 - [ ] **Step 3: Bootstrap new package records in dependency order**
 
@@ -399,8 +399,8 @@ Bind each package to GitHub repository `handong66/Evidoc` and workflow `release.
 - [ ] **Step 5: Create and push the release tag**
 
 ```bash
-git tag -a v0.3.0 -m "Evidoc 0.3.0"
-git push origin v0.3.0
+git tag -a v0.3.1 -m "Evidoc 0.3.1"
+git push origin v0.3.1
 ```
 
 Expected: Release Artifacts verifies that the already-published tarballs have identical integrity, skips only exact matches, and creates the GitHub Release with no annotations.
@@ -410,9 +410,9 @@ Expected: Release Artifacts verifies that the already-published tarballs have id
 Run in clean temporary directories:
 
 ```bash
-npx --yes evidoc@0.3.0 --version
-npx --yes evidoc@0.3.0 doctor
-npx --yes @evidoc/mcp-server@0.3.0 --help
+npx --yes evidoc@0.3.1 --version
+npx --yes evidoc@0.3.1 doctor
+npx --yes @evidoc/mcp-server@0.3.1 --help
 ```
 
 Compare npm tarballs with GitHub Release assets byte-for-byte and verify all twelve registry package records.
@@ -424,12 +424,12 @@ Apply clear migration messages only after Step 5 passes. Do not unpublish any pa
 - [ ] **Step 8: Move the Action major tag**
 
 ```bash
-git tag -f v0 v0.3.0
+git tag -f v0 v0.3.1
 git push origin -f v0
 ```
 
-Verify `v0`, `v0.3.0`, `origin/main`, and the GitHub Release all resolve to the intended release commit.
+Verify `v0`, `v0.3.1`, `origin/main`, and the GitHub Release all resolve to the intended release commit.
 
 - [ ] **Step 9: Final closeout**
 
-Run registry readback, `gh run list`, `gh release view v0.3.0`, public `npx` smoke, and final `git status --short --branch`. Expected: all green; worktree clean and synchronized with `origin/main`.
+Run registry readback, `gh run list`, `gh release view v0.3.1`, public `npx` smoke, and final `git status --short --branch`. Expected: all green; worktree clean and synchronized with `origin/main`.

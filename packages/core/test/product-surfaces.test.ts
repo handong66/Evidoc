@@ -6,6 +6,7 @@ import { join } from "node:path";
 const requiredPackages = [
   ["core", "@evidoc/core"],
   ["cli", "@evidoc/cli"],
+  ["evidoc", "@evidoc/evidoc"],
   ["reports", "@evidoc/reports"],
   ["github-action", "@evidoc/github-action"],
   ["mcp-server", "@evidoc/mcp-server"],

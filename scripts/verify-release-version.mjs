@@ -8,7 +8,7 @@ const expectedPackages = new Map([
   ["cli", "@evidoc/cli"],
   ["core", "@evidoc/core"],
   ["dashboard", "@evidoc/dashboard"],
-  ["evidoc", "evidoc"],
+  ["evidoc", "@evidoc/evidoc"],
   ["frontmatter", "@evidoc/frontmatter"],
   ["github-action", "@evidoc/github-action"],
   ["graph", "@evidoc/graph"],

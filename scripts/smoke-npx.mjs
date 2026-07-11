@@ -30,7 +30,7 @@ if (tarballs.length !== EXPECTED_PACKAGE_COUNT) {
   throw new Error(`Expected ${EXPECTED_PACKAGE_COUNT} package tarballs, found ${tarballs.length} in ${releaseDir}.`);
 }
 if (!hasEvidocPackage) {
-  throw new Error(`No evidoc package tarball found in ${releaseDir}.`);
+  throw new Error(`No @evidoc/evidoc package tarball found in ${releaseDir}.`);
 }
 
 const fixture = await mkdtemp(join(tmpdir(), "evidoc-npx-smoke-"));
@@ -96,6 +96,32 @@ try {
   if (!result.stdout.trim()) {
     throw new Error(`npx smoke produced no output.\n${result.stderr}`);
   }
+
+  const mcp = await run(
+    "npx",
+    ["--no-install", "evidoc-mcp"],
+    {
+      cwd: fixture,
+      input: [
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: {
+            protocolVersion: "2025-11-25",
+            capabilities: {},
+            clientInfo: { name: "evidoc-release-smoke", version: "1.0.0" }
+          }
+        }),
+        JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }),
+        ""
+      ].join("\n")
+    }
+  );
+  assertExit(mcp, 0, "evidoc-mcp initialize and tools/list");
+  assertIncludes(mcp.stdout, '"id":1', "evidoc-mcp initialize response");
+  assertIncludes(mcp.stdout, '"id":2', "evidoc-mcp tools/list response");
+  assertIncludes(mcp.stdout, "evidoc.agent_scan", "evidoc-mcp default tool list");
 
   const state = JSON.parse(result.stdout);
   const repository = state.repositories?.[0];
@@ -181,7 +207,7 @@ try {
     throw new Error(`Expected demo smoke to include sample findings.\n${demo.stdout}`);
   }
 
-  process.stdout.write(`npx evidoc smoke passed using ${tarballs.length} package tarball(s) across app, doctor, init, check, diagnose, fix, and demo.\n`);
+  process.stdout.write(`npx @evidoc/evidoc smoke passed using ${tarballs.length} package tarball(s) across app, doctor, init, check, diagnose, fix, demo, and MCP.\n`);
 } finally {
   await rm(fixture, { recursive: true, force: true });
 }
@@ -214,7 +240,7 @@ function packageOrder(left, right) {
 }
 
 function isWrapperTarball(name) {
-  return /^evidoc-[0-9]/.test(name);
+  return /^evidoc-evidoc-[0-9]/.test(name);
 }
 
 function runEvidoc(cwd, args) {
@@ -255,7 +281,7 @@ async function assertTarballMetadata(tarball) {
     throw new Error(`Cannot read package manifest from ${tarball}\n${manifestResult.stderr}`);
   }
   const manifest = JSON.parse(manifestResult.stdout);
-  if (manifest.name === "evidoc" && manifest.bin?.evidoc !== "dist/src/index.js") {
+  if (manifest.name === "@evidoc/evidoc" && manifest.bin?.evidoc !== "dist/src/index.js") {
     throw new Error(`${basename(tarball)} does not expose the evidoc executable.`);
   }
   if (manifest.name === "@evidoc/mcp-server" && manifest.bin?.["evidoc-mcp"] !== "dist/src/index.js") {
@@ -272,8 +298,9 @@ function run(command, args, options) {
         npm_config_audit: "false",
         npm_config_fund: "false"
       },
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["pipe", "pipe", "pipe"]
     });
+    child.stdin.end(options.input ?? "");
     const stdout = [];
     const stderr = [];
     child.stdout.on("data", (chunk) => stdout.push(chunk));
