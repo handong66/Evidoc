@@ -9,7 +9,7 @@ import { promisify } from "node:util";
 import { runCli } from "../src/index.js";
 
 const execFileAsync = promisify(execFile);
-const releaseVersion = JSON.parse(await readFile(join(process.cwd(), "package.json"), "utf8")).version as string;
+const releaseVersion = JSON.parse(await readFile(join(import.meta.dirname, "../../../../package.json"), "utf8")).version as string;
 
 async function fixture(): Promise<string> {
   return mkdtemp(join(tmpdir(), "evidoc-onboarding-"));
@@ -220,6 +220,26 @@ test("help exposes init scaffold flags in the usage line", async () => {
     /evidoc init --yes \[--root path\] \[--force\] \[--no-action\] \[--local-git\] \[--install-hooks\] \[--with features\]/
   );
   assert.match(stdout, /hook events default to --fail-on=review_needed/);
+});
+
+test("version flags print the runtime package version", async () => {
+  for (const flag of ["--version", "-v"]) {
+    let stdout = "";
+    let stderr = "";
+    const exitCode = await runCli([flag], {
+      cwd: await fixture(),
+      stdout: (chunk: string) => {
+        stdout += chunk;
+      },
+      stderr: (chunk: string) => {
+        stderr += chunk;
+      }
+    });
+
+    assert.equal(exitCode, 0, flag);
+    assert.equal(stdout, `${releaseVersion}\n`, flag);
+    assert.equal(stderr, "", flag);
+  }
 });
 
 test("init next commands quote repository roots with shell-special characters", async () => {

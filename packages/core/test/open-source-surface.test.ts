@@ -144,6 +144,9 @@ test("release pipeline verifies versions, package identity, and registry state b
   assert.match(workflow, /Unable to verify registry state/);
   assert.match(workflow, /Published package integrity mismatch/);
   assert.match(workflow, /Verified existing package artifact/);
+  assert.match(workflow, /for attempt in \{1\.\.6\}/);
+  assert.match(workflow, /Registry has not propagated .*retrying/);
+  assert.match(workflow, /Registry metadata has not propagated .*retrying/);
   assert.match(workflow, /dist\.integrity/);
   assert.match(workflow, /openssl dgst -sha512 -binary/);
   assert.match(workflow, /packages\/core/);
@@ -166,6 +169,11 @@ test("release pipeline verifies versions, package identity, and registry state b
   }
   assert.match(workflow, /tarball="\.evidoc\/release\/\$\{tarball_name\}"/);
   assert.match(workflow, /npm publish "\$tarball" --access public/);
+  assert.match(workflow, /registry-release/);
+  assert.match(workflow, /dist\.tarball/);
+  assert.match(workflow, /curl --fail --location/);
+  assert.match(workflow, /Downloaded registry artifact integrity mismatch/);
+  assert.match(workflow, /Downloaded registry artifact does not match locally verified release artifact/);
   assert.doesNotMatch(workflow, /npm publish "\.\/\$\{package_dir\}"/);
   assert.ok(
     workflow.indexOf("- name: Publish packages to npm") < workflow.indexOf("- name: Attach artifacts to GitHub Release"),
@@ -174,6 +182,7 @@ test("release pipeline verifies versions, package identity, and registry state b
   assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN|NPM_TOKEN/);
   assert.doesNotMatch(workflow, /github\.event\.inputs\.publish/);
   assert.match(workflow, /- name: Publish packages to npm\n\s+if: startsWith\(github\.ref, 'refs\/tags\/'\)/);
+  assert.match(workflow, /files: \.evidoc\/registry-release\/\*\.tgz/);
   assert.match(smoke, /package\/README\.md/);
   assert.match(smoke, /package\/LICENSE/);
   assert.match(smoke, /EXPECTED_PACKAGE_COUNT = 12/);

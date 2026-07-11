@@ -12,6 +12,7 @@ import {
   createAgentRuntimeContract,
   createChangedImpactFromFiles,
   detectRepositoryEvidocWorkflowText,
+  EVIDOC_VERSION,
   evidocWorkflowWarnings,
   fingerprintFileContent,
   listMcpTools,
@@ -82,6 +83,11 @@ export async function runCli(args: string[], io: Partial<CliIO> = {}): Promise<n
     stdout: io.stdout ?? ((chunk) => process.stdout.write(chunk)),
     stderr: io.stderr ?? ((chunk) => process.stderr.write(chunk))
   };
+
+  if (args.length === 1 && (args[0] === "--version" || args[0] === "-v")) {
+    resolved.stdout(`${EVIDOC_VERSION}\n`);
+    return 0;
+  }
 
   const defaultMode = resolveDefaultMode(args, io);
   let parsed: ReturnType<typeof parseArgs>;

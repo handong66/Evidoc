@@ -4,6 +4,12 @@ This project follows Semantic Versioning. Before 1.0.0, minor versions may inclu
 
 ## Unreleased
 
+## 0.3.2 - 2026-07-11
+
+- Added conventional `evidoc --version` and `evidoc -v` output backed by the shared runtime version.
+- Hardened Trusted Publishing recovery against npm registry propagation races after a publish response fails.
+- Made GitHub Release assets byte-identical to npm by downloading and integrity-checking the published registry tarballs before attachment.
+
 ## 0.3.1 - 2026-07-11
 
 - Replaced the registry-blocked unscoped launcher with the umbrella package `@evidoc/evidoc`, while keeping the installed executable named `evidoc` and `@evidoc/cli` as an implementation module.

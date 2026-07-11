@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const EXPECTED_PACKAGE_COUNT = 12;
+const releaseVersion = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8")).version;
 const releaseDir = resolve(repoRoot, process.argv[2] ?? ".evidoc/release");
 const shouldPackFresh = process.argv[2] === undefined;
 
@@ -95,6 +96,12 @@ try {
   }
   if (!result.stdout.trim()) {
     throw new Error(`npx smoke produced no output.\n${result.stderr}`);
+  }
+
+  const version = await runEvidoc(fixture, ["--version"]);
+  assertExit(version, 0, "--version");
+  if (version.stdout.trim() !== releaseVersion) {
+    throw new Error(`Expected evidoc --version to print ${releaseVersion}, got ${JSON.stringify(version.stdout)}.`);
   }
 
   const mcp = await run(

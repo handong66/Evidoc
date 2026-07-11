@@ -7,7 +7,7 @@ Evidoc publishes npm package tarballs and publishes registry packages through np
 ```bash
 npm ci
 npm test
-npm run release:verify -- --tag v0.3.1
+npm run release:verify -- --tag v0.3.2
 npm run release:smoke:npx
 npm run evidoc -- --fail-on=review_needed
 npm whoami
@@ -16,13 +16,13 @@ npm whoami
 When `npm run release:smoke:npx` is run locally without an explicit release directory, the script clears its default release directory and re-packs every workspace package before installing the tarballs into a temporary repository. This prevents stale package artifacts from passing as a current-source smoke test. Each package also has a `prepublishOnly` guard that refuses local publish when its package build output or bin entry is missing.
 Direct local npm publishing still requires a logged-in maintainer account; `npm whoami` fails on machines that can run dry-runs but cannot publish. GitHub Actions publishing requires a trusted publisher entry on every public package with repository `handong66/Evidoc`, workflow path `.github/workflows/release.yml`, and allowed action `npm publish`.
 
-Eleven component package records were bootstrapped at `0.3.0`. The unscoped launcher was rejected by npm's name-similarity policy, so `@evidoc/evidoc@0.3.1` must be bootstrapped from the exact locally verified tarball with the authenticated `handong66` maintainer account, then configured for Trusted Publishing. Do not repack between smoke verification and this bootstrap publish. After all twelve scoped records and trusted publishers exist, the `v0.3.1` workflow verifies or publishes the same locally rebuilt artifacts before creating the GitHub Release.
+Eleven component package records were bootstrapped at `0.3.0`. The unscoped launcher was rejected by npm's name-similarity policy, so `@evidoc/evidoc@0.3.1` was bootstrapped from the exact locally verified tarball and configured for Trusted Publishing. All twelve scoped package records and trusted publishers now exist. Tag releases publish in dependency order, recover safely from registry propagation races only when the eventual registry integrity matches the verified local artifact, then download the registry tarballs again for byte-identical GitHub Release assets.
 
 Configure or audit the trusted publisher entries with npm CLI 11.15.0 or newer:
 
 ```bash
 for package in \
-  evidoc \
+  @evidoc/evidoc \
   @evidoc/cli \
   @evidoc/core \
   @evidoc/dashboard \
@@ -49,7 +49,7 @@ gh secret delete NPM_TOKEN --repo handong66/Evidoc
 Before adding a new public npm package or changing package ownership, verify that every intended package name is either still unpublished or already owned by the maintainer account:
 
 ```bash
-npm view evidoc name version --json
+npm view @evidoc/evidoc name version --json
 npm view @evidoc/cli name version --json
 npm view @evidoc/core name version --json
 npm view @evidoc/dashboard name version --json
@@ -86,24 +86,24 @@ The `Release Artifacts` GitHub Actions workflow runs on `v*` tags and manual dis
 4. creates one npm tarball per package with explicit local `npm pack "./$package"` paths;
 5. runs `npm run release:smoke:npx -- .evidoc/release`, which checks tarball identity files, installs the local tarballs into temporary repositories, verifies the published `npx @evidoc/evidoc` path across `app --once --json --no-open`, `doctor`, `init --yes`, `check --fail-on=review_needed`, `diagnose`, `fix --safe --json`, `fix --safe --write --json`, and `demo --once --json --no-open`, and starts `evidoc-mcp` for real JSON-RPC `initialize` plus `tools/list` requests;
 6. uploads tarballs as workflow artifacts;
-7. preflights every intended npm name/version, accepts an existing version only when its registry integrity exactly matches the verified local tarball, fails on any mismatch or registry error, and publishes only missing packages in dependency order;
-8. attaches tarballs to a GitHub Release only after tag-triggered npm publishing succeeds, so a failed registry release does not create a green-looking GitHub Release first.
+7. preflights every intended npm name/version, accepts an existing version only when its registry integrity exactly matches the verified local tarball, and publishes missing packages in dependency order; after a failed publish response it retries registry reads and accepts success only when the eventual integrity is exact;
+8. downloads every published registry tarball, verifies its `dist.integrity`, and attaches those byte-exact artifacts to the GitHub Release only after tag-triggered npm publishing succeeds.
 
 ## Versioning
 
 Until the project has external users, package versions can stay synchronized. A release tag should use:
 
 ```bash
-git tag v0.3.1
-git push origin v0.3.1
+git tag v0.3.2
+git push origin v0.3.2
 ```
 
-The generated onboarding workflow references the exact matching tag, `handong66/Evidoc/packages/github-action@v0.3.1`. Do not merge or advertise that generated workflow until the tag exists in the public repository.
+The generated onboarding workflow references the exact matching tag, `handong66/Evidoc/packages/github-action@v0.3.2`. Do not merge or advertise that generated workflow until the tag exists in the public repository.
 
 After the first public release, maintainers can document a pinned release path and move the floating major tag after the exact release tag is pushed:
 
 ```bash
-git tag -f v0 v0.3.1
+git tag -f v0 v0.3.2
 git push origin -f v0
 ```
 

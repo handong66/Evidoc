@@ -67,7 +67,6 @@ jobs:
             packages/evidoc
           )
 
-          publish_required=()
           for package_dir in "${package_dirs[@]}"; do
             name="$(node -e "console.log(require('./${package_dir}/package.json').name)")"
             version="$(node -e "console.log(require('./${package_dir}/package.json').version)")"
@@ -95,17 +94,68 @@ jobs:
               echo "$registry_output" >&2
               exit 1
             fi
-            publish_required+=("$package_dir")
+
+            if npm publish "$tarball" --access public; then
+              continue
+            fi
+
+            for attempt in {1..6}; do
+              echo "Registry has not propagated ${name}@${version}; retrying (${attempt}/6)."
+              sleep $((attempt * 5))
+              if registry_output="$(npm view "${name}@${version}" dist.integrity --json 2>&1)"; then
+                published_integrity="$(node -e 'const value=JSON.parse(process.argv[1]); if (typeof value !== "string") process.exit(1); process.stdout.write(value)' "$registry_output")"
+                if [ "$published_integrity" != "$local_integrity" ]; then
+                  echo "Published package integrity mismatch for ${name}@${version} after publish failure." >&2
+                  exit 1
+                fi
+                echo "Verified propagated package artifact: ${name}@${version}"
+                break
+              fi
+              if [ "$attempt" = 6 ]; then
+                echo "Unable to publish or verify ${name}@${version}." >&2
+                echo "$registry_output" >&2
+                exit 1
+              fi
+            done
           done
 
-          for package_dir in "${publish_required[@]}"; do
+          rm -rf .evidoc/registry-release
+          mkdir -p .evidoc/registry-release
+          for package_dir in "${package_dirs[@]}"; do
+            name="$(node -e "console.log(require('./${package_dir}/package.json').name)")"
+            version="$(node -e "console.log(require('./${package_dir}/package.json').version)")"
             tarball_name="$(node -e "const p=require('./${package_dir}/package.json'); process.stdout.write(p.name.replace(/^@/, '').replace('/', '-') + '-' + p.version + '.tgz')")"
-            tarball=".evidoc/release/${tarball_name}"
-            npm publish "$tarball" --access public
+            for attempt in {1..6}; do
+              if registry_metadata="$(npm view "${name}@${version}" dist.integrity dist.tarball --json 2>&1)"; then
+                break
+              fi
+              if [ "$attempt" = 6 ]; then
+                echo "Unable to read registry metadata for ${name}@${version}." >&2
+                echo "$registry_metadata" >&2
+                exit 1
+              fi
+              echo "Registry metadata has not propagated ${name}@${version}; retrying (${attempt}/6)."
+              sleep $((attempt * 5))
+            done
+            registry_integrity="$(node -e 'const value=JSON.parse(process.argv[1]); process.stdout.write(value["dist.integrity"])' "$registry_metadata")"
+            registry_tarball="$(node -e 'const value=JSON.parse(process.argv[1]); process.stdout.write(value["dist.tarball"])' "$registry_metadata")"
+            local_tarball=".evidoc/release/${tarball_name}"
+            local_integrity="sha512-$(openssl dgst -sha512 -binary "$local_tarball" | openssl base64 -A)"
+            downloaded=".evidoc/registry-release/${tarball_name}"
+            curl --fail --location --silent --show-error "$registry_tarball" --output "$downloaded"
+            downloaded_integrity="sha512-$(openssl dgst -sha512 -binary "$downloaded" | openssl base64 -A)"
+            if [ "$downloaded_integrity" != "$registry_integrity" ]; then
+              echo "Downloaded registry artifact integrity mismatch for ${name}@${version}." >&2
+              exit 1
+            fi
+            if [ "$downloaded_integrity" != "$local_integrity" ]; then
+              echo "Downloaded registry artifact does not match locally verified release artifact for ${name}@${version}." >&2
+              exit 1
+            fi
           done
       - name: Attach artifacts to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
         with:
-          files: .evidoc/release/*.tgz
+          files: .evidoc/registry-release/*.tgz
           body_path: .evidoc/release/RELEASE_NOTES.md
